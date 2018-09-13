@@ -46,12 +46,30 @@ def test_expr_is_safe():
 def test_getAllClasses(d = locals()):
     assert getAllClasses(d) == ['Klass']
 
-# TODO: test apply_default_args
+
+def test_apply_default_args():
+    default = {'a':1, 'b':2, 'c':3}
+    kw_ab = {'a':0, 'b':1}
+    kw_ad = {'a':0, 'd':4}
+
+    d, ns = apply_default_args(kw_ab, default)
+    assert isinstance(d, dict)
+    assert all(k in d.keys() for k in default.keys())
+    assert d['a'] == 0
+    assert d['b'] == 1
+    assert d['c'] == 3
+    assert ns.a == 0
+    assert ns.b == 1
+    assert ns.c == 3
+
+    with pytest.raises(TypeError):
+        apply_default_args(kw_ad, default)
+
 
 def test_getAllFuncs(d = locals()):
     print(getAllFuncs(d))
     assert set(getAllFuncs(d)) == \
            {'test_getAllFuncs', 'getAllFuncs', 'isFunc', 'funct', 'getAllClasses',
                 'test_getAllClasses', 'test_isFunc', 'expr_is_safe', 'test_expr_is_safe',
-                'lam', 'meth', 'distance', 'apply_default_args'
+                'lam', 'meth', 'distance', 'apply_default_args', 'test_apply_default_args'
             }
