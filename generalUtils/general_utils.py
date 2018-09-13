@@ -1,5 +1,7 @@
 from types import MethodType, FunctionType, LambdaType
 from math import sqrt
+from copy import copy
+from types import SimpleNamespace
 import re
 
 
@@ -66,4 +68,20 @@ def expr_is_safe(expr_string):
     return re.search(r"(((?=\D)\S)+\d*)+[.]|[.]\d*((?=[\D])\S)+", expr_string) is None
 
 
-__all__ = ['isFunc', 'getAllFuncs', 'getAllClasses', 'distance', 'expr_is_safe']
+def apply_default_args(kwargs, defaultargs):
+    """Returns (dict, namespace) of defaultargs overridden by kwargs. Any keys in kwargs not in defaultargs
+    raise a TypeError
+
+    :param kwargs: dict of kwargs to process
+    :param defaultargs: dict of defaults
+    :return: dict, SimpleNamespace
+    """
+    unknown_args = kwargs.keys() - defaultargs.keys()
+    if unknown_args:
+        raise TypeError(f"Unknown argument(s): {unknown_args}")
+    a = defaultargs.copy()
+    a.update(kwargs)
+    return a, SimpleNamespace(**a)
+
+
+__all__ = ['isFunc', 'getAllFuncs', 'getAllClasses', 'distance', 'expr_is_safe', 'apply_default_args']

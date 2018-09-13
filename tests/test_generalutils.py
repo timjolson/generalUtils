@@ -1,6 +1,6 @@
 import pytest
-from generalUtils import isFunc, getAllClasses, getAllFuncs, expr_is_safe, distance
-# from generalUtils import *
+# from generalUtils import isFunc, getAllClasses, getAllFuncs, expr_is_safe, distance
+from generalUtils import *
 from generalUtils.helpers_for_tests import expr_safe_check
 
 
@@ -46,11 +46,12 @@ def test_expr_is_safe():
 def test_getAllClasses(d = locals()):
     assert getAllClasses(d) == ['Klass']
 
+# TODO: test apply_default_args
 
 def test_getAllFuncs(d = locals()):
     print(getAllFuncs(d))
     assert set(getAllFuncs(d)) == \
            {'test_getAllFuncs', 'getAllFuncs', 'isFunc', 'funct', 'getAllClasses',
                 'test_getAllClasses', 'test_isFunc', 'expr_is_safe', 'test_expr_is_safe',
-                'lam', 'meth', 'distance'
+                'lam', 'meth', 'distance', 'apply_default_args'
             }
