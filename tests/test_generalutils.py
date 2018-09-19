@@ -1,5 +1,5 @@
 import pytest
-# from generalUtils import isFunc, getAllClasses, getAllFuncs, expr_is_safe, distance
+# from generalUtils import isFunc, getAllClasses, getAllFuncs, exprIsSafe, distance
 from generalUtils import *
 from generalUtils.helpers_for_tests import expr_safe_check
 
@@ -35,24 +35,24 @@ def test_isFunc():
     assert not isFunc(('','',''))
 
 
-def test_expr_is_safe():
+def test_exprIsSafe():
     # test each expression
     for expr in expr_safe_check:
-        assert expr_is_safe(expr[0]) is expr[1]
+        assert exprIsSafe(expr[0]) is expr[1]
         # also test expr inside a function
-        assert expr_is_safe(f"sin({expr[0]})") is expr[1]
+        assert exprIsSafe(f"sin({expr[0]})") is expr[1]
 
 
 def test_getAllClasses(d = locals()):
     assert getAllClasses(d) == ['Klass']
 
 
-def test_apply_default_args():
+def test_applyDefaultArgs():
     default = {'a':1, 'b':2, 'c':3}
     kw_ab = {'a':0, 'b':1}
     kw_ad = {'a':0, 'd':4}
 
-    d, ns = apply_default_args(kw_ab, default)
+    d, ns = applyDefaultArgs(kw_ab, default)
     assert isinstance(d, dict)
     assert all(k in d.keys() for k in default.keys())
     assert d['a'] == 0
@@ -63,13 +63,13 @@ def test_apply_default_args():
     assert ns.c == 3
 
     with pytest.raises(TypeError):
-        apply_default_args(kw_ad, default)
+        applyDefaultArgs(kw_ad, default)
 
 
-def test_getAllFuncs(d = locals()):
-    print(getAllFuncs(d))
-    assert set(getAllFuncs(d)) == \
-           {'test_getAllFuncs', 'getAllFuncs', 'isFunc', 'funct', 'getAllClasses',
-                'test_getAllClasses', 'test_isFunc', 'expr_is_safe', 'test_expr_is_safe',
-                'lam', 'meth', 'distance', 'apply_default_args', 'test_apply_default_args'
+def test_getAllFuncs(d=locals()):
+    correct_set = {'test_getAllFuncs', 'getAllFuncs', 'isFunc', 'funct', 'getAllClasses',
+                'test_getAllClasses', 'test_isFunc', 'exprIsSafe', 'test_exprIsSafe',
+                'lam', 'meth', 'distance', 'applyDefaultArgs', 'test_applyDefaultArgs'
             }
+    print(set(getAllFuncs(d)) - correct_set)
+    assert set(getAllFuncs(d)) == correct_set

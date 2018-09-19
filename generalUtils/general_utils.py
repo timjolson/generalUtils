@@ -49,7 +49,7 @@ def distance(x, y):
     return sum
 
 
-def expr_is_safe(expr_string):
+def exprIsSafe(expr_string):
     """Returns whether the string is safe to 'eval()'.
     Detects improper use of '.' attribute access
 
@@ -68,7 +68,7 @@ def expr_is_safe(expr_string):
     return re.search(r"(((?=\D)\S)+\d*)+[.]|[.]\d*((?=[\D])\S)+", expr_string) is None
 
 
-def apply_default_args(kwargs, defaultargs):
+def applyDefaultArgs(kwargs, defaultargs):
     """Returns (dict, namespace) of defaultargs overridden by kwargs. Any keys in kwargs not in defaultargs
     raise a TypeError
 
@@ -95,4 +95,4 @@ def loggableQtName(self):
     return f"{type(self).__name__}:{self.objectName()}:"
 
 
-__all__ = ['isFunc', 'getAllFuncs', 'getAllClasses', 'distance', 'expr_is_safe', 'apply_default_args', 'loggableQtName']
+__all__ = ['isFunc', 'getAllFuncs', 'getAllClasses', 'distance', 'exprIsSafe', 'applyDefaultArgs', 'loggableQtName']
