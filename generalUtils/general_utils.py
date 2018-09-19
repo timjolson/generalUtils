@@ -84,4 +84,15 @@ def apply_default_args(kwargs, defaultargs):
     return a, SimpleNamespace(**a)
 
 
-__all__ = ['isFunc', 'getAllFuncs', 'getAllClasses', 'distance', 'expr_is_safe', 'apply_default_args']
+@property
+def loggableQtName(self):
+    """Property to identify instance when logging or when searching in Qt for this widget.
+    See objectName for Qt Objects.
+
+    :return: string, f"{type(self).__name__}:{self.objectName()}:"
+        e.g. 'DraggableWidget:objectName:'
+    """
+    return f"{type(self).__name__}:{self.objectName()}:"
+
+
+__all__ = ['isFunc', 'getAllFuncs', 'getAllClasses', 'distance', 'expr_is_safe', 'apply_default_args', 'loggableQtName']
