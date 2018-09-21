@@ -1,5 +1,5 @@
 import pytest
-# from generalUtils import isFunc, getAllClasses, getAllFuncs, exprIsSafe, distance
+# from generalUtils import isFunc, getAllClasses, getAllFuncs, exprIsSafe, tupleDistance
 from generalUtils import *
 from generalUtils.helpers_for_tests import expr_safe_check
 
@@ -69,7 +69,7 @@ def test_applyDefaultArgs():
 def test_getAllFuncs(d=locals()):
     correct_set = {'test_getAllFuncs', 'getAllFuncs', 'isFunc', 'funct', 'getAllClasses',
                 'test_getAllClasses', 'test_isFunc', 'exprIsSafe', 'test_exprIsSafe',
-                'lam', 'meth', 'distance', 'applyDefaultArgs', 'test_applyDefaultArgs'
+                'lam', 'meth', 'tupleDistance', 'applyDefaultArgs', 'test_applyDefaultArgs'
             }
     print(set(getAllFuncs(d)) - correct_set)
     assert set(getAllFuncs(d)) == correct_set

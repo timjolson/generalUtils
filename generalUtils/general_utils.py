@@ -34,8 +34,8 @@ def getAllClasses(localDict):
     return [x[0] for x in filter(lambda x: isinstance(x[1], type), localDict.items()) if not x[0].startswith('__')]
 
 
-def distance(x, y):
-    """Calculate distance between tuple values.
+def tupleDistance(x, y):
+    """Calculate tupleDistance between tuple values.
 
     :param x: (int, int, int), rgb tuple
     :param y: (int, int, int), rgb tuple
@@ -95,4 +95,4 @@ def loggableQtName(self):
     return f"{type(self).__name__}:{self.objectName()}:"
 
 
-__all__ = ['isFunc', 'getAllFuncs', 'getAllClasses', 'distance', 'exprIsSafe', 'applyDefaultArgs', 'loggableQtName']
+__all__ = ['isFunc', 'getAllFuncs', 'getAllClasses', 'tupleDistance', 'exprIsSafe', 'applyDefaultArgs', 'loggableQtName']
