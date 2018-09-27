@@ -1,4 +1,3 @@
-from PyQt5 import QtCore
 from types import FunctionType
 
 import logging
@@ -19,34 +18,6 @@ def check_error_typed(widget, *args, **kwargs):
     if widget.text() == 'error':
         return 'ERROR'
     return False
-
-
-def show_mouse_click(widget, event, *args, **kwargs):
-    """Uses widget.setText() to show if mouse click was Left or Right Click"""
-    if event.button() == QtCore.Qt.LeftButton:
-        widget.setText('Left Click')
-    elif event.button() == QtCore.Qt.RightButton:
-        widget.setText('Right Click')
-
-
-def lock_unlock_entry_mouse(widget, event):
-    """Uses widget.setReadOnly(X) to lock the QLineEdit. X = True for Left, False for Right Click"""
-    logging.debug('lock unlock entry')
-    if event.button() == QtCore.Qt.LeftButton:
-        widget.setReadOnly(True)
-    elif event.button() == QtCore.Qt.RightButton:
-        widget.setReadOnly(False)
-    logging.debug('entry on mouse : ' + str(widget._editBox.isReadOnly()))
-
-
-def lock_unlock_option_mouse(widget, event):
-    """Uses widget.setOptionFixed(X) to lock the QComboBox. X = True for Left, False for Right Click"""
-    logging.debug('lock unlock option')
-    if event.button() == QtCore.Qt.LeftButton:
-        widget.setOptionFixed(True)
-    elif event.button() == QtCore.Qt.RightButton:
-        widget.setOptionFixed(False)
-    logging.debug('option on mouse : ' + str(widget._editBox.isReadOnly()))
 
 
 def change_title_on_typing(widget, *args, **kwargs):
@@ -147,24 +118,56 @@ expr_safe_check = [
 
 
 try:
-    from entryWidget import EntryWidget
-    from entryWidget import colorList
-except:
+    from PyQt5 import QtCore
+except ImportError:
     pass
 else:
-    test_strings = ['str0', 'str1', 'str2', ['not a string']]
-    test_options_good = ['opt1', 'opt2', 'opt3']
-    test_options_bad = ['opt1', ['not a string']]
-    test_options_colors = ['red', 'blue', 'green']
-    test_color_tuple = copy(EntryWidget.defaultColors['error'])
-    test_color_tuple_good = ('blue', 'white')
-    test_color_tuple_bad = ('blue', ['not a string'])
-    test_color_dict = copy(EntryWidget.defaultColors)
-    test_color_dict_good = copy(EntryWidget.defaultColors)
-    test_color_dict_good.update({'default': (test_color_tuple_good)})
-    test_color_dict_bad = copy(EntryWidget.defaultColors)
-    test_color_dict_bad.update({'default': (test_color_tuple_bad)})
+    def show_mouse_click(widget, event, *args, **kwargs):
+        """Uses widget.setText() to show if mouse click was Left or Right Click"""
+        if event.button() == QtCore.Qt.LeftButton:
+            widget.setText('Left Click')
+        elif event.button() == QtCore.Qt.RightButton:
+            widget.setText('Right Click')
 
 
-del copy
+    def lock_unlock_entry_mouse(widget, event):
+        """Uses widget.setReadOnly(X) to lock the QLineEdit. X = True for Left, False for Right Click"""
+        logging.debug('lock unlock entry')
+        if event.button() == QtCore.Qt.LeftButton:
+            widget.setReadOnly(True)
+        elif event.button() == QtCore.Qt.RightButton:
+            widget.setReadOnly(False)
+        logging.debug('entry on mouse : ' + str(widget._editBox.isReadOnly()))
+
+
+    def lock_unlock_option_mouse(widget, event):
+        """Uses widget.setOptionFixed(X) to lock the QComboBox. X = True for Left, False for Right Click"""
+        logging.debug('lock unlock option')
+        if event.button() == QtCore.Qt.LeftButton:
+            widget.setOptionFixed(True)
+        elif event.button() == QtCore.Qt.RightButton:
+            widget.setOptionFixed(False)
+        logging.debug('option on mouse : ' + str(widget._editBox.isReadOnly()))
+
+
+    try:
+        from entryWidget import EntryWidget
+        from generalUtils import colorList
+    except ImportError:
+        pass
+    else:
+        test_strings = ['str0', 'str1', 'str2', ['not a string']]
+        test_options_good = ['opt1', 'opt2', 'opt3']
+        test_options_bad = ['opt1', ['not a string']]
+        test_options_colors = ['red', 'blue', 'green']
+        test_color_tuple = copy(EntryWidget.defaultColors['error'])
+        test_color_tuple_good = ('blue', 'white')
+        test_color_tuple_bad = ('blue', ['not a string'])
+        test_color_dict = copy(EntryWidget.defaultColors)
+        test_color_dict_good = copy(EntryWidget.defaultColors)
+        test_color_dict_good.update({'default': (test_color_tuple_good)})
+        test_color_dict_bad = copy(EntryWidget.defaultColors)
+        test_color_dict_bad.update({'default': (test_color_tuple_bad)})
+
+
 __all__ = [k for k, v in locals().items() if isinstance(v, (dict, tuple, list, FunctionType))]
