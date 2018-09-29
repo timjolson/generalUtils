@@ -94,6 +94,26 @@ def loggableQtName(self):
     return f"{type(self).__name__}:{self.objectName()}:"
 
 
+#TODO: test eventMatchesButtons
+def eventMatchesButtons(event, buttons):
+    """Checks event for buttons. Event must have all buttons/keys in buttons, and no others.
+
+    :param event: QEvent having .buttons(), .button(), and/or .modifiers()
+    :param buttons: iterable of buttons/keys to compare to
+    :return: bool, True if all buttons are in event, with no extra buttons or keys.
+            False otherwise
+    """
+    stat = int(0)
+    if hasattr(event, 'buttons'):
+        stat += int(event.buttons())
+    elif hasattr(event, 'button'):
+        stat += int(event.button())
+    if hasattr(event, 'modifiers'):
+        stat += int(event.modifiers())
+    check = sum(buttons)
+    return stat == check
+
+
 colorList = \
 [(['aliceblue'], '#F0F8FF', (240, 248, 255)),
  (['antiquewhite'], '#FAEBD7', (250, 235, 215)),
@@ -304,6 +324,10 @@ def findColor(color):
     raise TypeError("color: {} is not the correct format for query".format(color))
 
 
+__all__ = ['isFunc', 'getAllFuncs', 'getAllClasses', 'tupleDistance', 'exprIsSafe', 'applyDefaultArgs',
+           'loggableQtName', 'eventMatchesButtons', 'colorList', 'hex_to_rgb', 'rgb_to_hex', 'findColor']
+
+
 try:
     from PyQt5.QtGui import QPalette
 except ImportError:
@@ -324,6 +348,4 @@ else:
         else:
             raise TypeError
 
-
-__all__ = ['isFunc', 'getAllFuncs', 'getAllClasses', 'tupleDistance', 'exprIsSafe', 'applyDefaultArgs',
-           'loggableQtName', 'hex_to_rgb', 'rgb_to_hex', 'findColor', 'getCurrentColor', 'colorList']
+    __all__.append('getCurrentColor')
