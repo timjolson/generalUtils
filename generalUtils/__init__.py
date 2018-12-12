@@ -7,5 +7,9 @@ from .structset import StructSet
 from .stopwatch import StopWatch
 from .multiproc_handler import MultiProcHandler
 from . import logger_recorder
-from .myplot import MyplotWidget
 from . import datastream
+
+try:
+    from . import myplot
+except ImportError:
+    pass

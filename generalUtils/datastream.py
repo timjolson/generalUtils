@@ -1,28 +1,25 @@
-import numpy as np
 from .logger_recorder import Recorder, LogAndRecord
 from .general_utils import ensure_file
 
-
-if config['pyqt']['lib'] == 'pyqtgraph':
+try:
     from pyqtgraph.Qt import QtCore
+except ImportError:
+    linestyles = {
+        'l': 'QtCore.Qt.SolidLine',
+        '-': 'QtCore.Qt.DashLine',
+        '.': 'QtCore.Qt.DotLine',
+        '-.': 'QtCore.Qt.DashDotLine',
+        '-..': 'QtCore.Qt.DashDotDotLine',
+    }
+else:
     linestyles = {
         'l':QtCore.Qt.SolidLine,
         '-':QtCore.Qt.DashLine,
         '.':QtCore.Qt.DotLine,
         '-.':QtCore.Qt.DashDotLine,
         '-..':QtCore.Qt.DashDotDotLine,
-        }
-elif config['pyqt']['lib'] == 'None':
-    linestyles = {
-        'l':'QtCore.Qt.SolidLine',
-        '-':'QtCore.Qt.DashLine',
-        '.':'QtCore.Qt.DotLine',
-        '-.':'QtCore.Qt.DashDotLine',
-        '-..':'QtCore.Qt.DashDotDotLine',
-        }
-else:
-    raise Exception("config file 'pyqt':'lib' setting is invalid")
-    
+    }
+
 colors = {
     'y':'yellow',
     'w':'white',
@@ -34,7 +31,7 @@ colors = {
 
 
 class DataStream(LogAndRecord):
-    '''class collects data points and plotting styles for each curve or channel.
+    '''DataStream collects data points and plotting styles for each curve or channel.
     Written by Tim Olson - tim.lsn@gmail.com
     
     obj = DataStream(curves, record_file, load_data, load_file)
@@ -67,6 +64,7 @@ class DataStream(LogAndRecord):
         be assigned a default style.
 
     #TODO:
+    0. Move styles to plotting (don't need graphical info to store data points)
     1. not require width every time
     2. add default curve labels
     '''

@@ -58,7 +58,7 @@ class StructSet(SimpleNamespace):
                 repr.append('{}=\'{}\''.format(k, v) if type(v) == type('') else '{}={}'.format(k, v))
             for field in repr[0:len(repr) - 1]:
                 out += field
-                out += ','
+                out += ', '
             out += repr[-1]
             out += ')'
             return ''.join(out)
@@ -77,7 +77,9 @@ class StructSet(SimpleNamespace):
         self.__dict__.update(d)
 
     def __add__(self, other):
-        return dict(self.__dict__, **other)
+        _ret = StructSet(self.__dict__)
+        _ret.update(other)
+        return _ret
 
     def __iadd__(self, other):
         self.__dict__.update(other)
