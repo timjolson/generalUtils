@@ -1,6 +1,8 @@
 import pytest
-# from generalUtils import isFunc, getAllClasses, getAllFuncs, exprIsSafe, tupleDistance
-from generalUtils import *
+from generalUtils import isFunc, getAllClasses, getAllFuncs, tupleDistance, applyDefaultArgs
+from generalUtils.sympy_utils import exprIsSafe
+from generalUtils.color_utils import colorList, rgb_to_hex, hex_to_rgb, findColor
+from generalUtils.qt_utils import getCurrentColor
 from generalUtils.helpers_for_tests import expr_safe_check
 
 
