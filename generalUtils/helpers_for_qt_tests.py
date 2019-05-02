@@ -1,4 +1,5 @@
 from types import FunctionType
+from PyQt5 import QtCore
 
 import logging
 from copy import copy
@@ -30,6 +31,7 @@ def lock_unlock_option_mouse(widget, event):
     elif event.button() == QtCore.Qt.RightButton:
         widget.setOptionFixed(False)
     logging.debug('option on mouse : ' + str(widget._editBox.isReadOnly()))
+
 
 
 __all__ = [k for k, v in locals().items() if isinstance(v, (dict, tuple, list, FunctionType))]
