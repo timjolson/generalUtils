@@ -8,7 +8,7 @@
     findColor(color)   
         Finds a color in colorList by name, rgb, or hex string.
         If a name string is passed, it must match exactly.
-        If rgb (int, int, int) tuple is passed, if no exact match, returns closest color by tupleDistance between values.
+        If rgb (int, int, int) tuple is passed, if no exact match, returns closest color by tuple_distance between values.
         If hex string passed, if no exact match, converts to rgb and runs with that tuple.
     
     getCurrentColor(widget, color)

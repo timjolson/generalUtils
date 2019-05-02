@@ -5,6 +5,6 @@ name = 'generalUtils'
 setup(
     name=name,
     version="0.5",
-    packages = find_packages(),
-    tests_require = ['pytest', 'PyQt5'],
+    packages=find_packages(),
+    tests_require=['pytest', 'PyQt5', 'matplotlib', 'numpy'],
 )
