@@ -55,31 +55,6 @@ def draw_circle(img, center, radius, color, thickness=None):
                     err += 2 * (dy - dx + 1)
     return img
 
-# try:
-#     import matplotlib.pyplot as plt
-#     import numpy as np
-# except ImportError:
-#     pass
-# else:
-
-
-def plot3d(x, y, z, fig=None, zlim=(-10, 10)):
-    """
-    obj = plot3d(...)
-    obj.show()
-    """
-    import matplotlib.pyplot as plt
-    import numpy as np
-
-    if fig is None:
-        fig = plt.figure()
-
-    ax = plt.axes(projection='3d')
-    x, y = np.meshgrid(x, y)
-    ax.plot_surface(x, y, z)
-    ax.set_zlim(*zlim)
-    return fig
-
 
 def flatten(base, *layers):
     for mask in layers[::-1]:
@@ -125,4 +100,5 @@ def flatten(base, *layers):
 
     return base
 
-__all__ = ['draw_circle', 'plot3d', 'flatten']
+
+__all__ = ['draw_circle', 'flatten']
