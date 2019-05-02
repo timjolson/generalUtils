@@ -148,3 +148,6 @@ class StructSet(SimpleNamespace):
 
     def clear(self):
         self.__dict__.clear()
+
+
+__all__ = ['StructSet']

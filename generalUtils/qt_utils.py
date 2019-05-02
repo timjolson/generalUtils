@@ -1,6 +1,6 @@
 from .color_utils import findColor
 from PyQt5.QtGui import QPalette
-
+#TODO: make pytests for this module
 
 @property
 def loggableQtName(self):

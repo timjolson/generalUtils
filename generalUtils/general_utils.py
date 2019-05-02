@@ -1,9 +1,10 @@
 from types import MethodType, FunctionType, LambdaType
 from math import sqrt
 from types import SimpleNamespace
+import os
 
 
-def isFunc(func):
+def is_func(func):
     """Check if 'func' is an instance of (MethodType, FunctionType, LambdaType)
 
     :param func: thing to check if it's a function
@@ -12,17 +13,17 @@ def isFunc(func):
     return isinstance(func, (MethodType, FunctionType, LambdaType))
 
 
-def getAllFuncs(localDict):
-    """Get names of all functions in a dictionary. Uses isFunc.
+def get_all_funcs(localDict):
+    """Get names of all functions in a dictionary. Uses is_func.
     Ignores names starting with dunder '__'
 
     :param localDict: dictionary to check for functions
-    :return: [strings], names of functions in localDict where isFunc()==True
+    :return: [strings], names of functions in localDict where is_func()==True
     """
-    return [x[0] for x in filter(lambda x: isFunc(x[1]), localDict.items()) if not x[0].startswith('__')]
+    return [x[0] for x in filter(lambda x: is_func(x[1]), localDict.items()) if not x[0].startswith('__')]
 
 
-def getAllClasses(localDict):
+def get_all_classes(localDict):
     """Get names of all classes in a dictionary.
     Ignores names starting with dunder '__'
 
@@ -32,24 +33,9 @@ def getAllClasses(localDict):
     return [x[0] for x in filter(lambda x: isinstance(x[1], type), localDict.items()) if not x[0].startswith('__')]
 
 
-def tupleDistance(x, y):
-    """Calculate tupleDistance between tuple values.
-
-    :param x: (int, int, int), rgb tuple
-    :param y: (int, int, int), rgb tuple
-    :return: float, sum of distances between each pair of elements
-    """
-    assert len(x)==len(y)
-    sum = 0
-    for i in range(len(x)):
-        sum += (x[i]-y[i])**2
-    sum = sqrt(sum)
-    return sum
-
-
-def applyDefaultArgs(kwargs, defaultargs):
+def apply_default_args(kwargs, defaultargs):
     """Returns (dict, namespace) of defaultargs overridden by kwargs. Any keys in kwargs not in defaultargs
-    raise a TypeError
+    raise a ValueError
 
     :param kwargs: dict of kwargs to process
     :param defaultargs: dict of defaults
@@ -57,7 +43,7 @@ def applyDefaultArgs(kwargs, defaultargs):
     """
     unknown_args = kwargs.keys() - defaultargs.keys()
     if unknown_args:
-        raise TypeError(f"Unknown argument(s): {unknown_args}")
+        raise ValueError(f"Unknown argument(s): {unknown_args}")
     a = defaultargs.copy()
     a.update(kwargs)
     return a, SimpleNamespace(**a)
@@ -152,39 +138,11 @@ def deadband(val, range_cutoff, default=0.0):
     return deadband_2(val, default - range_cutoff, default + range_cutoff)
 
 
-def gettimestamp():
+def get_timestamp():
     """Gets a human friendly string for the current system time."""
     from datetime import datetime
     from time import time
     return str(datetime.fromtimestamp(time()))
-
-
-def ArgFunc(func, *args, **kwargs):
-    """Returns callable reference to func, with args and kwargs attached.
-
-    obj = ArgFunc(function, arguments, keyword arguments)
-
-    obj() := func(*args, **kwargs)
-    """
-    return _ArgFunc(func, *args, **kwargs).run
-
-
-class _ArgFunc():
-    '''A class with function reference and arguments storage for ease of use.
-    When constructed, obj.run can be used where a lambda could go.
-
-    obj = ArgFunc(function, arguments, keyword arguments)
-
-    .run() runs function, supplying all arguments to it as parameters
-    '''
-
-    def __init__(self, func, *args, **kwargs):
-        self.func = func
-        self.args = args
-        self.kwargs = kwargs
-
-    def run(self):
-        self.func(*self.args, **self.kwargs)
 
 
 def ensure_file(path):
@@ -197,18 +155,18 @@ def ensure_file(path):
     assert isinstance(path, str), 'provide a filename string (directory optional)'
 
     result = SimpleNamespace()
-    result.fullpath = abspath(path)
-    result.directory = dirname(result.fullpath)
-    result.filename = basename(result.fullpath)
+    result.fullpath = os.path.abspath(path)
+    result.directory = os.path.dirname(result.fullpath)
+    result.filename = os.path.basename(result.fullpath)
     assert result.filename != ''
 
-    if isdir(result.filedir):
+    if os.path.isdir(result.directory):
         result.made_dir = False
     else:
-        makedirs(result.filedir)
+        os.makedirs(result.directory)
         result.made_dir = True
 
-    if not isfile(result.fullpath):
+    if not os.path.isfile(result.fullpath):
         with open(result.fullpath, 'a') as f:
             f.close()
         result.made_file = True
@@ -258,6 +216,6 @@ def ensure_file(path):
 #     return closest_distance <= (circle.radius + fudge) ** 2
 
 
-__all__ = ['isFunc', 'getAllFuncs', 'getAllClasses', 'tupleDistance', 'applyDefaultArgs',
+__all__ = ['is_func', 'get_all_funcs', 'get_all_classes', 'apply_default_args',
            'constrain', 'constrain_2', 'constrain_decider', 'rescale', 'deadband', 'deadband_2',
-           'gettimestamp', 'ensure_file']
+           'get_timestamp', 'ensure_file']

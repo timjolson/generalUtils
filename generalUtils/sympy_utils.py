@@ -1,7 +1,7 @@
 import re
 
 
-def exprIsSafe(expr_string):
+def expr_is_safe(expr_string):
     """Returns whether the string is safe to 'eval()'.
     Detects improper use of '.' attribute access
 
@@ -19,4 +19,5 @@ def exprIsSafe(expr_string):
     # return re.search(r"((((?=\D)\S)+\d*)+[.])|([.]\d*((?=[\D])\S)+)", expr_string) is None
     return re.search(r"(((?=\D)\S)+\d*)+[.]|[.]\d*((?=[\D])\S)+", expr_string) is None
 
-__all__ = ['exprIsSafe']
+
+__all__ = ['expr_is_safe']

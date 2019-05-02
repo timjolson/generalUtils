@@ -1,5 +1,6 @@
 from .logger_recorder import Recorder, LogAndRecord
 from .general_utils import ensure_file
+from numpy import mod
 
 try:
     from pyqtgraph.Qt import QtCore
@@ -92,12 +93,12 @@ class DataStream(LogAndRecord):
     @property
     def _next_color(self):
         '''next color option'''
-        self.last_color = np.mod(self.last_color + 1, self.num_colors)
+        self.last_color = mod(self.last_color + 1, self.num_colors)
         return self.colors[self.last_color]
     @property
     def _next_style(self):
         '''next line style option'''
-        self.last_style = np.mod(self.last_style + 1, self.num_styles)
+        self.last_style = mod(self.last_style + 1, self.num_styles)
         return self.linestyles[self.last_style]
     
     def add_point(self, *point):

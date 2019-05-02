@@ -2,6 +2,9 @@
 Inspired by
 https://gitlab.com/smiley1983/halite3-match-manager/blob/master/keyboard_detection.py
 
+#TODO: add support for Windows usage (termios is apparently *nix specific)
+#TODO: add list of keys with byte versions for usage in 'query_keyboard(keys)'
+
 """
 import sys
 import os
@@ -50,7 +53,10 @@ class keyboard_detection:
         # swith to normal terminal
         termios.tcsetattr(self.fd, termios.TCSAFLUSH, self.old_term)
 
-    def query_keyboard(self, keys=list((b'q', b'\x1b'))):
+    def query_keyboard(self, keys=None):
+        if keys is None:
+            # q or ESC keys
+            keys = [(b'q', b'\x1b')]
         dr, dw, de = select([sys.stdin], [], [], 0)
         key = None
         if dr:
