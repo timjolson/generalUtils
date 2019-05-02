@@ -8,6 +8,7 @@ from .stopwatch import StopWatch
 from .multiproc_handler import MultiProcHandler
 from . import logger_recorder
 from . import datastream
+from .keyboard_detection import keyboard_detection, KeyStop
 
 try:
     from . import myplot

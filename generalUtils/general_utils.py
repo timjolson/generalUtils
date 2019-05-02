@@ -188,18 +188,17 @@ class _ArgFunc():
 
 
 def ensure_file(path):
-    # TODO: update this function and it's calls to take a normal path string instead of list
-    """Takes a path string representing a relative file path and name, creates
-    the file if it does not exist, and returns the OS-specific tuple of strings:
-        (absolute file location, absolute filepath+name)
+    """
+    Make sure a file exists and can be written to.
+
+    :param path: string representing filename (relative is acceptable)
+    :return: namespace:  .fullpath, .directory, .filename, .made_dir, .made_file
     """
     assert isinstance(path, str), 'provide a filename string (directory optional)'
-    from os.path import abspath, dirname, basename, isfile, isdir
-    from os import makedirs
 
     result = SimpleNamespace()
     result.fullpath = abspath(path)
-    result.filedir = dirname(result.fullpath)
+    result.directory = dirname(result.fullpath)
     result.filename = basename(result.fullpath)
     assert result.filename != ''
 
