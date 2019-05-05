@@ -9,6 +9,7 @@ from . import helpers_for_tests
 from . import helpers_for_qt_tests
 from . import datastream
 from . import image_utils
+from . import differential_evolver
 
 # classes
 from .structset import StructSet
