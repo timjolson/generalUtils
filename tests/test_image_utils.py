@@ -1,5 +1,5 @@
 import numpy as np
-from generalUtils.image_utils import draw_circle, plot3d
+from generalUtils.image_utils import draw_circle
 import cv2
 
 # for fill in list(range(0,20,3)):
