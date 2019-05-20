@@ -32,16 +32,18 @@ def compile_ui_file(files, output_files=None):
     if isinstance(files, str) and (isinstance(output_files, str) or output_files is None):
         files = [files]
         output_files = [output_files or None]
+    if output_files is None:
+        output_files = [None]
 
-    for path, output in zip(files, output_files):
-        path = os.path.abspath(path)
+    for file, output in zip(files, output_files):
+        path = os.path.abspath(file)
         directory, file_name = os.path.split(path)
         file_name = "ui_" + file_name.replace(".ui", os.extsep + "py")
-        output_path = os.path.join(path, file_name)
+        output_path = output or os.path.join(directory, file_name)
 
         print("Compiling", path, "to", output_path)
         input_file = open(path)
-        output_file = output or open(output_path, "w")
+        output_file = open(output_path, "w")
         PyQt5.uic.compileUi(input_file, output_file)
         input_file.close()
         output_file.close()

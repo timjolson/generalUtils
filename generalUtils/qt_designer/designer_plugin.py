@@ -5,161 +5,151 @@ from generalUtils.qt_designer.designer_widgets import GeoLocationWidget, GlobeWi
 from generalUtils.qt_designer.designer_taskmenu import GeoLocationTaskMenuFactory
 
 
-class GeoLocationPlugin(QPyDesignerCustomWidgetPlugin):
-    """GeoLocationPlugin(QPyDesignerCustomWidgetPlugin)
+def CustomWidgetPlugin(widgetClass, widgetGroup='', taskMenuFactoryClass=None, icon=None,
+                 toolTip='', whatsThis='', isContainer=False):
+    class Klass(QPyDesignerCustomWidgetPlugin):
+        def __init__(self, parent=None):
+            """
+            The __init__() method is only used to set up the plugin and define its
+            initialized variable.
 
-    Provides a Python custom plugin for Qt Designer by implementing the
-    QDesignerCustomWidgetPlugin using a PyQt-specific custom plugin class.
-    """
+            Inspired by https://doc.qt.io/archives/qq/qq26-pyqtdesigner.html
 
-    # The __init__() method is only used to set up the plugin and define its
-    # initialized variable.
-    def __init__(self, parent=None):
+            :param parent: ignored
+            """
+            QPyDesignerCustomWidgetPlugin.__init__(self)
+            self.initialized = False
 
-        QPyDesignerCustomWidgetPlugin.__init__(self)
-        self.initialized = False
+        def initialize(self, formEditor):
+            """
+            The initialize() and isInitialized() methods allow the plugin to set up
+            any required resources, ensuring that this can only happen once for each
+            plugin.
+            :param formEditor: passed from qtcreator possibly
+            :return:
+            """
 
-    # The initialize() and isInitialized() methods allow the plugin to set up
-    # any required resources, ensuring that this can only happen once for each
-    # plugin.
-    def initialize(self, formEditor):
+            if self.initialized:
+                return
 
-        if self.initialized:
-            return
+            # We register an extension factory to add a extension to each form's
+            # task menu.
+            manager = formEditor.extensionManager()
+            if manager:
+                if self.taskMenuFactory:
+                    self.factory = self.taskMenuFactory(manager)
+                    manager.registerExtensions(self.factory, __file__)
 
-        # We register an extension factory to add a extension to each form's
-        # task menu.
-        manager = formEditor.extensionManager()
-        if manager:
-            self.factory = GeoLocationTaskMenuFactory(manager)
-            manager.registerExtensions(
-                self.factory, "com.trolltech.Qt.Designer.TaskMenu"
-            )
+            self.initialized = True
 
-        self.initialized = True
+        def isInitialized(self):
+            return self.initialized
 
-    def isInitialized(self):
-        return self.initialized
+        def createWidget(self, parent):
+            """
+            This factory method creates new instances of our custom widget with the
+            appropriate parent.
+            """
+            return self.widgetClass(parent=parent)
 
-    # This factory method creates new instances of our custom widget with the
-    # appropriate parent.
-    def createWidget(self, parent):
-        return GeoLocationWidget(parent)
+        def name(self):
+            """
+            This method returns the name of the custom widget class that is provided
+            by this plugin.
 
-    # This method returns the name of the custom widget class that is provided
-    # by this plugin.
-    def name(self):
-        return "GeoLocationWidget"
+            :return:
+            """
+            return type(self).__name__
 
-    # Returns the name of the group in Qt Designer's widget box that this
-    # widget belongs to.
-    def group(self):
-        return "Qt Quarterly Examples"
+        def group(self):
+            """
+            Returns the name of the group in Qt Designer's widget box that this
+            widget belongs to.
 
-    # Returns the icon used to represent the custom widget in Qt Designer's
-    # widget box.
-    def icon(self):
-        return QtGui.QIcon(_logo_pixmap)
+            :return:
+            """
+            return self.widgetGroup or "Custom Widgets"
 
-    # Returns a short description of the custom widget for use in a tool tip.
-    def toolTip(self):
-        return ""
+        def icon(self):
+            """
+            Returns the icon used to represent the custom widget in Qt Designer's
+            widget box.
 
-    # Returns a short description of the custom widget for use in a "What's
-    # This?" help message for the widget.
-    def whatsThis(self):
-        return ""
+            :return:
+            """
+            return self._icon or QtGui.QIcon(_logo_pixmap)
 
-    # Returns True if the custom widget acts as a container for other widgets;
-    # otherwise returns False. Note that plugins for custom containers also
-    # need to provide an implementation of the QDesignerContainerExtension
-    # interface if they need to add custom editing support to Qt Designer.
-    def isContainer(self):
-        return False
+        def toolTip(self):
+            """
+            Returns a short description of the custom widget for use in a tool tip.
 
-    # Returns an XML description of a custom widget instance that describes
-    # default values for its properties. Each custom widget created by this
-    # plugin will be configured using this description.
-    def domXml(self):
-        return '<widget class="GeoLocationWidget" name="geolocationWidget" />\n'
+            :return:
+            """
+            return self._toolTip
 
-    # Returns the module containing the custom widget class. It may include
-    # a module path.
-    def includeFile(self):
-        return "generalUtils.qt_designer.designer_widgets_sample"
+        def whatsThis(self):
+            """
+            Returns a short description of the custom widget for use in a "What's
+            This?" help message for the widget.
+
+            :return:
+            """
+            return self._whatsThis
+
+        def isContainer(self):
+            """
+            Returns True if the custom widget acts as a container for other widgets;
+            otherwise returns False. Note that plugins for custom containers also
+            need to provide an implementation of the QDesignerContainerExtension
+            interface if they need to add custom editing support to Qt Designer.
+
+            :return:
+            """
+            return self._isContainer
+
+        def domXml(self):
+            """
+            Returns an XML description of a custom widget instance that describes
+            default values for its properties. Each custom widget created by this
+            plugin will be configured using this description.
+
+            :return:
+            """
+            return "<widget class=\"" + self.widgetClass.__name__ + "\" name=\"" + self.widgetClass.__name__ + "\" />\n"
+
+        def includeFile(self):
+            """
+            Returns the module containing the custom widget class. It may include
+            a module path.
+
+            :return:
+            """
+            return f'{self.widgetClass.__module__}'
 
 
-class GlobePlugin(QPyDesignerCustomWidgetPlugin):
-    """GlobePlugin(QPyDesignerCustomWidgetPlugin)
+    Klass.__name__ = widgetClass.__name__
+    Klass.widgetClass = widgetClass
+    Klass.widgetGroup = widgetGroup
+    Klass.taskMenuFactory = taskMenuFactoryClass
 
-    Provides a Python custom plugin for Qt Designer by implementing the
-    QDesignerCustomWidgetPlugin using a PyQt-specific custom plugin class.
-    """
+    if isinstance(icon, str):
+        icon = QtGui.QIcon(fileName=icon)
+    elif isinstance(icon, list):
+        icon = QtGui.QPixmap(icon)
 
-    # The __init__() method is only used to set up the plugin and define its
-    # initialized variable.
-    def __init__(self, parent=None):
-        QPyDesignerCustomWidgetPlugin.__init__(self)
-        self.initialized = False
+    Klass._icon = icon
+    Klass._toolTip = toolTip
+    Klass._whatsThis = whatsThis
+    Klass._isContainer = isContainer
+    return Klass
 
-    # The initialize() and isInitialized() methods allow the plugin to set up
-    # any required resources, ensuring that this can only happen once for each
-    # plugin.
-    def initialize(self, formEditor):
-        if self.initialized:
-            return
 
-        self.initialized = True
+GeoLocationPlugin = CustomWidgetPlugin(
+    GeoLocationWidget, taskMenuFactoryClass=GeoLocationTaskMenuFactory,
+    toolTip='SpinBoxes for Latitude and Longitude')
 
-    def isInitialized(self):
-        return self.initialized
-
-    # This factory method creates new instances of our custom widget with the
-    # appropriate parent.
-    def createWidget(self, parent):
-        return GlobeWidget(parent)
-
-    # This method returns the name of the custom widget class that is provided
-    # by this plugin.
-    def name(self):
-        return "GlobeWidget"
-
-    # Returns the name of the group in Qt Designer's widget box that this
-    # widget belongs to.
-    def group(self):
-        return "Qt Quarterly Examples"
-
-    # Returns the icon used to represent the custom widget in Qt Designer's
-    # widget box.
-    def icon(self):
-        return QtGui.QIcon(_logo_pixmap)
-
-    # Returns a short description of the custom widget for use in a tool tip.
-    def toolTip(self):
-        return ""
-
-    # Returns a short description of the custom widget for use in a "What's
-    # This?" help message for the widget.
-    def whatsThis(self):
-        return ""
-
-    # Returns True if the custom widget acts as a container for other widgets;
-    # otherwise returns False. Note that plugins for custom containers also
-    # need to provide an implementation of the QDesignerContainerExtension
-    # interface if they need to add custom editing support to Qt Designer.
-    def isContainer(self):
-        return False
-
-    # Returns an XML description of a custom widget instance that describes
-    # default values for its properties. Each custom widget created by this
-    # plugin will be configured using this description.
-    def domXml(self):
-        return '<widget class="GlobeWidget" name="globeWidget" />\n'
-
-    # Returns the module containing the custom widget class. It may include
-    # a module path.
-    def includeFile(self):
-        return "generalUtils.qt_designer.designer_widgets_sample"
+GlobePlugin = CustomWidgetPlugin(
+    GlobeWidget, toolTip='Sphere of points with a highlighted location')
 
 
 # Define the image used for the icon.

@@ -74,6 +74,12 @@ class GeoLocationWidget(QWidget):
 
 
 class GlobeWidget(QWidget):
+    """GlobeWidget(QWidget)
+    Modified from https://doc.qt.io/archives/qq/qq26-pyqtdesigner.html
+    to work with PyQt5
+
+    Provides a 3d sphere representation.
+    """
 
     def __init__(self, parent=None):
 
