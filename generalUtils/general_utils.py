@@ -2,6 +2,8 @@ from types import MethodType, FunctionType, LambdaType
 from math import sqrt
 from types import SimpleNamespace
 import os
+import sys
+from inspect import stack as insp_stack
 
 
 def is_func(func):
@@ -145,35 +147,127 @@ def get_timestamp():
     return str(datetime.fromtimestamp(time()))
 
 
-def ensure_file(path):
-    """
-    Make sure a file exists and can be written to.
+class attr_proxy(property):
+    def __init__(self, worker, attr_name, supervisor=None):
+        supervisorsetter = lambda *a: None
 
-    :param path: string representing filename (relative is acceptable)
-    :return: namespace:  .fullpath, .directory, .filename, .made_dir, .made_file
-    """
-    assert isinstance(path, str), 'provide a filename string (directory optional)'
+        if supervisor is not None:
+            supervisorsetter = lambda k, v: setattr(supervisor, k, v)
+            if isinstance(supervisor, str) and supervisor == '':
+                supervisor = insp_stack()[1].frame.f_locals
 
-    result = SimpleNamespace()
-    result.fullpath = os.path.abspath(path)
-    result.directory = os.path.dirname(result.fullpath)
-    result.filename = os.path.basename(result.fullpath)
-    assert result.filename != ''
+            if isinstance(supervisor, dict):
+                supervisorsetter = lambda k, v: supervisor.update({k: v})
 
-    if os.path.isdir(result.directory):
-        result.made_dir = False
-    else:
-        os.makedirs(result.directory)
-        result.made_dir = True
+        def deller(master_instance):
+            delattr(master_instance, attr_name)
 
-    if not os.path.isfile(result.fullpath):
-        with open(result.fullpath, 'a') as f:
-            f.close()
-        result.made_file = True
-    else:
-        result.made_file = False
+        if isinstance(worker, str):
+            self.target = '.'.join([worker, attr_name])
+            getter, setter = self.str_getter_setter(worker, attr_name)
 
-    return result
+        else:
+            self.target = '.'.join([type(worker).__qualname__, attr_name])
+            getter, setter = self.obj_getter_setter(worker, attr_name)
+
+        property.__init__(self, getter, setter, deller)
+
+        self.name = attr_name
+        supervisorsetter(attr_name, self)
+
+    def obj_getter_setter(self, worker, attr_name):
+        def getter(master_instance):
+            if isinstance(worker, dict): res = worker.get(attr_name)
+            else: res = getattr(worker, attr_name)
+            return res
+
+        def setter(master_instance, value):
+            if isinstance(worker, dict): worker.update({attr_name: value})
+            else: setattr(worker, attr_name, value)
+        return getter, setter
+
+    def str_getter_setter(self, worker, attr_name):
+        def getter(master_instance):
+            sub = getattr(master_instance, worker)
+            if isinstance(sub, dict): res = sub.get(attr_name)
+            else: res = getattr(sub, attr_name)
+            return res
+
+        def setter(master_instance, value):
+            sub = getattr(master_instance, worker)
+            if isinstance(sub, dict): sub.update({attr_name: value})
+            else: setattr(sub, attr_name, value)
+        return getter, setter
+
+    def __str__(self):
+        return f"{type(self).__name__} to {self.target}"
+
+
+class method_proxy(attr_proxy):
+    def obj_getter_setter(self, worker, attr_name):
+        def getter(master_instance):
+            if isinstance(worker, dict): res = worker.get(attr_name)
+            else: res = getattr(worker, attr_name)
+            return res
+
+        def setter(master_instance, value):
+            setattr(master_instance, attr_name, value)
+
+        return getter, setter
+
+    def str_getter_setter(self, worker, attr_name):
+        def getter(master_instance):
+            sub = getattr(master_instance, worker)
+            if isinstance(sub, dict): res = sub.get(attr_name)
+            else: res = getattr(sub, attr_name)
+            return res
+
+        def setter(master_instance, value):
+            setattr(master_instance, attr_name, value)
+
+        return getter, setter
+
+
+class delegated():
+    def __init__(self, worker, attr_name=None):
+        self.worker = worker
+        self.attr_name = attr_name
+
+    def __call__(self, func, *args, **kwargs):
+        return delegated.method(self.worker, self.attr_name or func.__name__)
+
+    class attribute(attr_proxy):
+        pass
+
+    @staticmethod
+    def attributes(worker, attrs, supervisor=None):
+        if supervisor is not None and isinstance(supervisor, str) and supervisor == '':
+            supervisor = insp_stack()[1].frame.f_locals
+        proxies = []
+        for attr_name in delegated.split(attrs):
+            attr_proxy = delegated.attribute(worker, attr_name, supervisor)
+            proxies.append(attr_proxy)
+        return proxies
+
+    class method(method_proxy):
+        pass
+
+    @staticmethod
+    def methods(worker, attrs, supervisor=None):
+        if supervisor is not None and isinstance(supervisor, str) and supervisor == '':
+            supervisor = insp_stack()[1].frame.f_locals
+
+        proxies = []
+        for attr_name in delegated.split(attrs):
+            method_proxy = delegated.method(worker, attr_name, supervisor)
+            proxies.append(method_proxy)
+        return proxies
+
+    @staticmethod
+    def split(attrs):
+        if isinstance(attrs, str):
+            attrs = attrs.replace(',', ' ').split()
+        return attrs
 
 
 # def intersect_segment_circle(start, end, circle, fudge=0.0):
@@ -218,4 +312,4 @@ def ensure_file(path):
 
 __all__ = ['is_func', 'get_all_funcs', 'get_all_classes', 'apply_default_args',
            'constrain', 'constrain_2', 'constrain_decider', 'rescale', 'deadband', 'deadband_2',
-           'get_timestamp', 'ensure_file']
+           'get_timestamp', 'delegated', 'attr_proxy', 'method_proxy']
