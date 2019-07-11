@@ -55,11 +55,15 @@ expr_safe_check = [
     ('1. ', True, False, False),
     ('', True, False, False),
     ('ab. ', False, True, False),
+    ('ab.', False, True, False),
     ('text', True, False, True),
     ('text_2', True, False, True),
     ('text2', True, False, True),
     ('text2a', True, False, True),
     ('text2.', False, True, False),
+    ('(.1)', True, False, False),
+    ('(1.)', True, False, False),
+    ('1.)', False, True, False),
 ]
 
 
