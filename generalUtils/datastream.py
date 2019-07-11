@@ -1,206 +1,217 @@
-from .logger_recorder import Recorder, LogAndRecord
-from .general_utils import ensure_file
-from numpy import mod
-
-try:
-    from pyqtgraph.Qt import QtCore
-except ImportError:
-    linestyles = {
-        'l': 'QtCore.Qt.SolidLine',
-        '-': 'QtCore.Qt.DashLine',
-        '.': 'QtCore.Qt.DotLine',
-        '-.': 'QtCore.Qt.DashDotLine',
-        '-..': 'QtCore.Qt.DashDotDotLine',
-    }
-else:
-    linestyles = {
-        'l':QtCore.Qt.SolidLine,
-        '-':QtCore.Qt.DashLine,
-        '.':QtCore.Qt.DotLine,
-        '-.':QtCore.Qt.DashDotLine,
-        '-..':QtCore.Qt.DashDotDotLine,
-    }
-
-colors = {
-    'y':'yellow',
-    'w':'white',
-    'b':'blue',
-    'r':'red',
-    'g':'green',
-    # 'k':'black' # background is black
-    }
+import logging
+import os
+import sys
+import csv
+import io
+import select
+import string
+import numpy as np
+from collections import namedtuple
 
 
-class DataStream(LogAndRecord):
-    '''DataStream collects data points and plotting styles for each curve or channel.
-    Written by Tim Olson - tim.lsn@gmail.com
-    
-    obj = DataStream(curves, record_file, load_data, load_file)
+class DataStream:
+    def __init__(self, record_to_file=None, pause=False):
+        self.points = {}
+        self.Point = None
+        self.file_format = 'csv'
+        self._file_inited = False
+        self._recorder = lambda *x, **y: None
+        self.pause = pause
+        self.set_record_file(record_to_file)
 
-        curves (dict): dictionary of curve names and styles {name:style}
-                style = 'cwt' where:
-                    c= single letter color, one of:
-                            r=red, b=blue, g=green, y=yellow, w=white
-                    w= single digit line width
-                    t= line style, one of:
-                        'l' = solid line (lowercase L)
-                        '-' = dashed line
-                        '.' = dotted line
-                        '-.' = dash-dot line
-                        '-..' = dash-dot-dot line
-                e.g. {'error':'r2-.','position':'b3l'}
-                Note: right-most curves will appear on top of others
-
-        record_file (file path list):
-            file to save points into (see Logger example for file path info)
-        load_data (dict of lists):
-            data to pre-load, format {name:[values],name:[values],...}
-        load_file (file path list):
-            file to pre-load point from (see Logger example for file path info)
-
-    Note: if a load_file is specified, it's points will load before load_data
-
-    Note: adding points or load_data will add the labels from those respective
-        points to the DataStream. If no 'curves' is specified, each curve will
-        be assigned a default style.
-
-    #TODO:
-    0. Move styles to plotting (don't need graphical info to store data points)
-    1. not require width every time
-    2. add default curve labels
-    '''
-    
-    def __init__(self, curves=None, load_data=None, load_file=None, **logrecord):
-        '''See doc for DataStream'''
-        LogAndRecord.__init__(self, **logrecord)
-
-        self.curves = dict() if not curves else curves
-        self.points = dict() if not curves else \
-            {c:l for c,l in zip(curves.keys(), [list() for k in curves.keys()])}
-        self.reload_data = dict() if not curves else \
-            {c: l for c, l in zip(curves.keys(), [list() for k in curves.keys()])}
-
-        self.num_colors, self.num_styles = len(colors), len(linestyles)
-        self.last_color, self.last_style = self.num_colors-1, self.num_styles-1
-        self.colors, self.linestyles = list(colors.keys()), list(linestyles.keys())
-
-        if load_file: self.load_from_file(load_file)
-        self.load_file = load_file
-        
-        if load_data: self.load_from_dict(load_data)
-        self.load_data = load_data
-
-    @property
-    def _next_color(self):
-        '''next color option'''
-        self.last_color = mod(self.last_color + 1, self.num_colors)
-        return self.colors[self.last_color]
-    @property
-    def _next_style(self):
-        '''next line style option'''
-        self.last_style = mod(self.last_style + 1, self.num_styles)
-        return self.linestyles[self.last_style]
-    
-    def add_point(self, *point):
-        '''Add a data point to the DataStream.
-        add_point({label:value, label:value, ..., label:value})
-        e.g. add_point({'x':1,'y':2,'z':3.8})
-        or
-        if there are curve labels already
-        add_point(n1,n2,...,nN)
-        e.g. add_point(0,1,2,3)
-
-        #TODO: add default curve labels
-        '''
-        if isinstance(point[0], dict):
-            for label, value in point[0].items():
-                if label not in self.curves.keys():
-                    self.curves.update({label:'{}2{}'.format(self._next_color, self._next_style)})
-                    self.points.update({label:[value]})
-                else:
-                    self.points[label].append(value)
-            self.record(point[0])
-            return point[0]
-        elif isinstance(point, tuple):
-            tempdict = dict()
-            if self.curves:
-                for label,value in zip(self.curves.keys(),point):
-                    self.points[label].append(value)
-                    tempdict.update({label:value})
-                self.record(tempdict)
-                return tempdict
-            #TODO: add default curve labels
-            raise Exception('DataStream has no labels, doesn\'t know what to do with provided point')
-        raise Exception('DataStream.add_point(point), point is incorrect format')
-    
-    def _reload_point(self, label, value):
-        if label not in self.curves.keys():
-            self.curves.update({label:'{}2{}'.format(self._next_color, self._next_style)})
-        if label not in self.points.keys():
-            self.points.update({label:[]})
-        if label not in self.reload_data.keys():
-            self.reload_data.update({label:[]})
-        self.points[label].append(value)
-        self.reload_data[label].append(value)
-
-    def load_from_dict(self, points):
-        '''Loads data points from a dict() in format
-        {curve_name:[values], curve_name:[values],...}
-        '''
-        if not self.curves:
-            self.curves= {label:'{}2{}'.format(c,s) for label,c,s in zip(points.keys(),self.colors,self.linestyles)}
-
-        self.load_data = points
-
-        for label, values in points.items():
-            if label not in self.points.keys():
-                self.points.update({label: []})
-            # for value in values:
-            self.points[label].extend(values)
-
-    def load_from_file(self, load_file):
-        '''Loads data points from a file (see Logger for file format).
-        load_file contains one point per line, in format:
-        curve,value;curve2,value;...
-        curve,value;curve2,value;...
-        '''
-        file = ensure_file(load_file)
-        with open(file.fullpath,'r') as f:
-            lines = f.readlines()
-        for l in lines:
-            entries = l.split(';')
-            entries.remove('\n')
-            for entry in entries:
-                p = entry.split(',')
-                self._reload_point(p[0], float(p[1]))
-
-    def save_to_file(self, save_file=None):
-        '''Saves DataStream points to a file. If a record_file is already in
-        place, saves to save_file as a backup (if provided). If there is no
-        record_file already, connects save_file as the new record_file, storing
-        all existing points and recording all future points. Returns new filename
-        if backing-up or added file as record_file, else returns None.'''
-        if save_file and not self.recorder:  # add file to record to
-            self.recorder = Recorder(save_file)
-            self.record = self.recorder.log
-            record = self.record  # temporary record function
-            _return = save_file
-        elif self.recorder and not save_file:  # no new file, recorder exists
-            # has been recording
-            return None
-        elif save_file and self.recorder:  # both exist, save backup
-            recorder = Recorder(save_file)
-            record = recorder.log  # temporary record function
-            _return = save_file
+    def format_point(self, point):
+        if self.file_format == 'csv':
+            msg = ','.join(str(v) for v in point)
+        elif self.file_format == 'dict':
+            msg = str({k: v for k, v in zip(point._fields, point)})
+        elif self.file_format == 'list':
+            msg = str(list(point))
         else:
-            raise Exception('Provide file to save to')
+            raise NotImplementedError(f"File format '{self.file_format}' not recognized")
+        return msg
 
-        for idx in range(max([len(self.points[k]) for k in self.points.keys()])):
-            tempdict = dict()
-            for label in self.points.keys():
-                tempdict.update({label:self.points[label][idx]})
-            record(tempdict)
-        return _return
+    def record(self, point):
+        if not self.pause and self._recorder:
+            self._recorder(self.format_point(point))
+
+    def start_recording(self):
+        self.pause = False
+
+    def stop_recording(self):
+        self.pause = True
+
+    def set_record_file(self, file):
+        if file is None:
+            return
+        if isinstance(file, str):
+            file = os.path.abspath(file)
+            if not os.path.exists(file):  # file does not exist
+                os.makedirs(os.path.dirname(file), exist_ok=True)  # make directory
+                open(file, 'w').close()
+            self._recorder = lambda msg: open(file, 'a').write(msg+os.linesep)
+        elif isinstance(file, io.IOBase):
+            self._recorder = lambda msg: file.write(msg+os.linesep)
+        elif isinstance(file, logging.Logger):
+            self._recorder = lambda msg: file.info(msg)
+        elif isinstance(file, logging.Handler):
+            def make_record(msg):
+                return \
+                    logging.getLogRecordFactory()(
+                        file._name, file._name, file.level, 'DataStream', 0, msg, (), sys.exc_info()
+                    )
+            self._recorder = lambda msg: file.handle(make_record(msg))
+        elif hasattr(file, 'send'):
+            self._recorder = lambda msg: file.send(msg)
+        elif hasattr(file, 'write'):
+            self._recorder = lambda msg: file.write(msg)
+        else:
+            raise NotImplementedError(f"Don't know how to handle record_to_file={type(file)}")
+
+        self.file = file
+
+    @staticmethod
+    def _check_list_tuple(things):
+        if len(things) == 0:
+            return
+
+        sample = things[0]
+        if len(sample) > 0 and hasattr(sample[0], '__iter__'):
+            raise TypeError('Data arrays must not be multi-dimensional.')
+
+        if not all(len(v) == len(sample) for v in things):
+            raise ValueError('Not all arrays are the same length.')
+
+    @staticmethod
+    def _check_numpy_array(things):
+        if len(things) == 0:
+            return
+
+        sample = things[0]
+        if len(sample.shape) > 1:
+            raise TypeError('Data arrays must not be multi-dimensional.')
+
+        if not all(v.shape == sample.shape for v in things):
+            raise ValueError('Not all arrays are the same length.')
+
+    @staticmethod
+    def _check_types(things):
+        if len(set(map(type, things))) not in (0, 1):
+            raise TypeError('Not all collections are of same type.')
+        return type(things[0])
+
+    @classmethod
+    def from_dict(cls, data, **kwargs):
+        ds = cls(**kwargs)
+
+        if not isinstance(data, dict):
+            raise TypeError(f"{cls.__name__}.from_dict() only accepts a dict type, not {type(data)}")
+
+        ds.Point = namedtuple('Point', data.keys())
+        cls._check_types(list(data.values()))
+
+        sample = list(data.values())[0]
+        if isinstance(sample, np.ndarray):
+            cls._check_numpy_array(list(data.values()))
+            ds.points = {k:np.array(v, dtype=np.float64) for k,v in data.items()}
+
+        elif isinstance(sample, (list, tuple)):
+            cls._check_list_tuple(list(data.values()))
+            ds.points = {k:np.array(v, dtype=np.float64) for k,v in data.items()}
+
+        elif not hasattr(sample, '__iter__') and np.isreal(sample):
+            cls._check_types(list(data.values()))
+            ds.points = {k:np.array(v, dtype=np.float64) for k,v in data.items()}
+
+        else:
+            raise NotImplementedError(f"Data format not recognized: {type(sample)}")
+
+        return ds
+
+    @classmethod
+    def from_tuple(cls, data, **kwargs):
+        ds = cls(**kwargs)
+
+        if not isinstance(data, tuple):
+            raise TypeError(f"{cls.__name__}.from_tuple() only accepts a tuple/namedtuple type, not {type(data)}")
+
+        cls._check_types(data)
+
+        sample = data[0]
+        if hasattr(data, '_fields'):  # namedtuple
+            if isinstance(sample, np.ndarray):  # numpy arrays
+                cls._check_numpy_array(data)
+                ds.Point = namedtuple('Point', data._fields)
+                ds.points = {k:np.array(v) for k, v in zip(data._fields, data)}
+            elif isinstance(sample, (list, tuple)):  # values are list or something
+                cls._check_list_tuple(data)
+                ds.Point = namedtuple('Point', data._fields)
+                ds.points = {k:np.array(v) for k, v in zip(data._fields, data)}
+            else:
+                raise NotImplementedError(f"Data format not recognized: {type(sample)}")
+        else:  # tuple
+            if isinstance(sample, np.ndarray):  # numpy arrays
+                cls._check_numpy_array(data)
+            elif isinstance(sample, (list, tuple)):  # values are list or something
+                cls._check_list_tuple(data)
+            else:
+                raise NotImplementedError(f"Data format not recognized: {type(sample)}")
+            import string
+            ds.Point = namedtuple('Point', [string.ascii_letters[i] for i in range(len(data))])
+            ds.points = {k: np.array(v) for k, v in zip(ds.Point._fields, data)}
+
+        return ds
+
+    def add_point(self, *point, **kwargs):
+        point = self.make_point(*point, **kwargs)
+
+        # if self.Point is not None and isinstance(point, self.Point):
+        logging.debug(f"add_point({point}, {kwargs}")
+        for k, v in zip(point._fields, point):
+            logging.debug(f"k,v {k,v}")
+            logging.debug(f"points[{k}] {self.points[k]}")
+            self.points[k] = np.concatenate([self.points[k], [v]])
+        self.record(point)
+
+    def make_point(self, *point, **kwargs):
+        if not point and not kwargs:
+            raise ValueError("No point provided")
+        elif not point and kwargs:
+            point = kwargs
+
+        if len(point) == 1 and (not isinstance(point, self.Point) if self.Point is not None else True):
+            point = point[0]
+
+        # object points were not yet configured
+        if self.Point is None:
+            if isinstance(point, dict):
+                self.Point = namedtuple('Point', point.keys())
+            elif isinstance(point, tuple):
+                if hasattr(point, '_fields'):  # namedtuple
+                    self.Point = namedtuple('Point', point._fields)
+                else:  # tuple
+                    self.Point = namedtuple('Point', [string.ascii_letters[i] for i in range(len(point))])
+            elif isinstance(point, np.ndarray):
+                self.Point = namedtuple('Point', [string.ascii_letters[i] for i in range(point.shape[0])])
+            else:
+                raise NotImplementedError(f"Data format not recognized: {type(point)}")
+            self.points = {k:np.array([]) for k in self.Point._fields}
+            if self._file_inited is False and self.file_format == 'csv':
+                self._recorder(','.join(self.Point._fields))
+
+        # handle point as tuple, named tuple, kwargs, dict
+        if isinstance(point, dict):
+            point = self.Point(**point)
+        elif isinstance(point, tuple):
+            if hasattr(point, '_fields'):  # namedtuple
+                point = self.Point(**dict(zip(point._fields, point)))
+            else:  # tuple
+                point = self.Point._make(point)
+        elif isinstance(point, np.ndarray):
+            point = self.Point._make(*np.rollaxis(point, 1))
+        else:
+            raise NotImplementedError(f"Data format not recognized: {type(point)}")
+
+        return point
 
 
-__all__ = ['DataStream', 'linestyles', 'colors']
+__all__ = ['DataStream']
