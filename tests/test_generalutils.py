@@ -1,8 +1,8 @@
 import pytest
-from generalUtils import is_func, get_all_classes, get_all_funcs, apply_default_args, ensure_file
+from generalUtils import is_func, get_all_classes, get_all_funcs, apply_default_args
 
 
-# helpers: sample function, lambda, class, object, method
+# helpers: sample function, lambda, class, object, call
 class Klass():
     def __init__(self):
         pass
