@@ -8,7 +8,7 @@
     findColor(color)   
         Finds a color in colorList by name, rgb, or hex string.
         If a name string is passed, it must match exactly.
-        If rgb (int, int, int) tuple is passed, if no exact match, returns closest color by tupleDistance between values.
+        If rgb (int, int, int) tuple is passed, if no exact match, returns closest color by tuple_distance between values.
         If hex string passed, if no exact match, converts to rgb and runs with that tuple.
     
     getCurrentColor(widget, color)
@@ -19,3 +19,32 @@
         widget: QWidget, widget to inpect
         color: string or QPalette.ColorRole, portion of widget to inspect
             e.g. 'Window' or 'WindowText' or QtGui.QPalette.Background or QtGui.QPalette.Foreground
+
+
+### differential_solver.DESolver
+Extension of class version of [scipy.optimize.differential_evolution](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.differential_evolution.html) that can be saved and reloaded.
+
+Also see: scipy.optimize._differentialevolution.DifferentialEvolutionSolver
+
+    from differential_evolver import DESolver
+    import json
+    
+    # Make the object
+    des = DESolver(func, bounds, ...)
+    
+    # Save the object's state to a file
+    json.dump(des.state, open(file, 'w'))
+    
+    # Load an object from a file
+    reloaded = DESolver.from_json(open(file, 'r'), func, args, callback)
+    
+    # Save the object's state in memory
+    backup = des.state.copy()
+    
+    # Load an object from a state in memory
+    des = DESolver.from_state(backup, func, args, callback)
+    
+    # Continue solving/iterating as usual
+    x, y = next(des)
+    # or
+    des.solve()

@@ -526,4 +526,22 @@ class MyplotWidget(pg.QtGui.QWidget, LogAndRecord):
         return vis
 
 
-__all__ = ['MyplotWidget']
+def plot3d(x, y, z, fig=None, zlim=(-10, 10)):
+    """
+    obj = plot3d(...)
+    obj.show()
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    if fig is None:
+        fig = plt.figure()
+
+    ax = plt.axes(projection='3d')
+    x, y = np.meshgrid(x, y)
+    ax.plot_surface(x, y, z)
+    ax.set_zlim(*zlim)
+    return fig
+
+
+__all__ = ['MyplotWidget', 'plot3d']

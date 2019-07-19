@@ -1,4 +1,45 @@
-from .general_utils import tupleDistance
+"""
+Color utilities.
+Convert hex <-> rgb.
+Find a color name, hex, or rgb from any of these.
+
+Functions:
+    tuple_distance(x, y) - x: (int, int, int) -- y: (int, int, int)
+    hex_to_rgb(hex) - hex: string, e.g. '#F0F0F0' or '0xf0f0f0'
+    rgb_to_hex(rg) - rgb: (int, int, int)
+    findColor(color) - color: hex string, color name string, or rgb (int, int, int)
+
+Lists:
+    colorList[
+        (
+            ['color name1', 'color name2', ...],
+            'hex color string',
+            (red, blue, green)
+        ),
+        ...
+        ]
+
+        ex.
+        (['darkgray', 'darkgrey'], '#A9A9A9', (169, 169, 169))
+
+"""
+
+
+def tuple_distance(x, y):
+    """Calculate tuple_distance between tuple values.
+
+    :param x: (int, int, int), rgb tuple
+    :param y: (int, int, int), rgb tuple
+    :return: float, sum of distances between each pair of elements
+    """
+    from math import sqrt
+
+    assert len(x)==len(y)
+    sum = 0
+    for i in range(len(x)):
+        sum += (x[i]-y[i])**2
+    sum = sqrt(sum)
+    return sum
 
 
 colorList = \
@@ -179,7 +220,7 @@ def findColor(color):
     """Finds a color in colorList by name, rgb, or hex string.
     If a name string is passed, it must match exactly.
     If rgb (int, int, int) tuple is passed, if no exact match, returns closest color
-        by tupleDistance between values.
+        by tuple_distance between values.
     If hex string passed, if no exact match, converts to rgb and runs with that tuple.
 
     :param color: hex string, color name string, or rgb (int, int, int)
@@ -203,7 +244,7 @@ def findColor(color):
             if c[2] == color:
                 return c[0], c[1].upper(), c[2]
         for c in colorList:
-            d = tupleDistance(color, c[2])
+            d = tuple_distance(color, c[2])
             if d < _min:
                 _min = d
                 _min_c = c
@@ -211,4 +252,4 @@ def findColor(color):
     raise TypeError("color: {} is not the correct format for query".format(color))
 
 
-__all__ = ['colorList', 'hex_to_rgb', 'rgb_to_hex', 'findColor']
+__all__ = ['colorList', 'hex_to_rgb', 'rgb_to_hex', 'findColor', 'tuple_distance']

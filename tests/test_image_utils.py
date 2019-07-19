@@ -1,5 +1,5 @@
 import numpy as np
-from generalUtils.image_utils import draw_circle, plot3d
+from generalUtils.image_utils import draw_circle
 import cv2
 
 # for fill in list(range(0,20,3)):
@@ -20,7 +20,7 @@ import cv2
 
 for fill in list(range(-1,20,3)):
     blank = np.zeros([800, 800])
-    circle(blank, [400,400], 380, 1, fill)
+    draw_circle(blank, [400,400], 380, 1, fill)
     cv2.imshow('',blank)
     cv2.waitKey(200)
 
@@ -30,6 +30,6 @@ for r in range(0,50, 10):
     # for fill in [-1]:
             for fill in list(range(-1,10,3)):
                 blank = np.zeros([71,151])
-                circle(blank,[x,y], r, 1, fill)
+                draw_circle(blank,[x,y], r, 1, fill)
                 cv2.imshow('',blank)
                 cv2.waitKey(50)
