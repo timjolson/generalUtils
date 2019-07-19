@@ -56,79 +56,10 @@ def test_apply_default_args():
         apply_default_args(kw_ad, default)
 
 
-def test_ensure_file():
-    import os
-
-    # setup
-    filename = 'ensure_file.test'
-    fullpath = os.path.abspath(filename)
-    try:
-        os.remove(filename)
-    except FileNotFoundError:
-        pass
-
-    # relative path
-    result = ensure_file(filename)
-    assert result.made_file is True
-    assert result.filename == filename
-    assert result.fullpath == fullpath
-
-    # file already exists
-    result = ensure_file(filename)
-    assert result.made_file is False
-    assert result.filename == filename
-    assert result.fullpath == fullpath
-
-    # absolute path
-    result = ensure_file(fullpath)
-    assert result.made_file is False
-    assert result.filename == filename
-    assert result.fullpath == fullpath
-
-    # cleanup
-    try:
-        os.remove(filename)
-    except FileNotFoundError:
-        pass
-
-
-    # path includes directory
-    directory = 'data'
-    dir_filename = os.path.join(directory, filename)
-    fullpath = os.path.abspath(dir_filename)
-
-    try:
-        os.remove(dir_filename)
-    except FileNotFoundError:
-        pass
-    try:
-        os.rmdir(directory)
-    except FileNotFoundError:
-        pass
-
-    result = ensure_file(dir_filename)
-    assert result.directory == os.path.abspath(directory)
-    assert result.made_dir is True
-    assert result.filename == filename
-    assert result.made_file is True
-    assert result.fullpath == fullpath
-
-    # cleanup
-    try:
-        os.remove(dir_filename)
-    except FileNotFoundError:
-        pass
-    try:
-        os.rmdir(directory)
-    except FileNotFoundError:
-        pass
-
-
 def test_get_all_funcs(d=locals()):
     correct_set = {'test_get_all_funcs', 'get_all_funcs', 'is_func', 'funct', 'get_all_classes',
                    'test_get_all_classes', 'test_is_func',
                    'lam', 'meth', 'apply_default_args', 'test_apply_default_args',
-                   'ensure_file', 'test_ensure_file'
             }
 
     print(set(get_all_funcs(d)) - correct_set)

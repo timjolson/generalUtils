@@ -63,7 +63,7 @@ expr_safe_check = [
     ('text2.', False, True, False),
     ('(.1)', True, False, False),
     ('(1.)', True, False, False),
-    ('1.)', False, True, False),
+    ('1.)', True, True, False),
 ]
 
 
