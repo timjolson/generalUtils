@@ -1,6 +1,3 @@
 [submodule "generalUtils/delegated"]
 	path = generalUtils/delegated
 	url = https://github.com/timjolson/delegated.git
-[submodule "generalUtils/datastream"]
-	path = generalUtils/datastream
-	url = https://github.com/timjolson/datastream.git
