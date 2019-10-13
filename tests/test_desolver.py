@@ -43,11 +43,10 @@ def test_from_json():
     assert des.state == from_json.state
 
     # This fails regularly, appears to be low level, inconsequential math error
+    # Any differences between arrays should be extremely small (float error, etc.)
     # assert (des.population == from_json.population).all()
-    assert (np.abs(des.population - from_json.population) < 1e-16).all()
-
-    # Any differences between arrays is usually one of (1.38777878e-17, -2.77555756e-17)
-    logging.debug(f"equality check\n{des.population == from_json.population}")
+    # assert (np.abs(des.population - from_json.population) < 1e-16).all()
+    assert np.allclose(des.population, from_json.population)
     logging.debug(f"diff\n{des.population - from_json.population}")
 
     res = from_json.solve()
@@ -60,8 +59,8 @@ def test_from_json():
     clear_file(filename)
 
 
-def test_iterate_from_json():
-    filename = 'iterate_from_json'
+def test_iterate_load_save():
+    filename = 'iterate_load_save'
     clear_file(filename)
 
     # iterate solver

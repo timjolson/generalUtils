@@ -5,8 +5,18 @@ from scipy.optimize._differentialevolution import DifferentialEvolutionSolver
 
 
 class DESolver(DifferentialEvolutionSolver):
+    __doc__ = str(DifferentialEvolutionSolver.__doc__) + \
     """
-
+    Custom Methods:
+    .from_state(state_object, func, args, callback)
+        returns DESolver object created from dict `state_object`
+    .from_json(json_dict_state, func, args, callback)
+        returns DESolver object created from a json structure
+    
+    Custom Properties:
+    X - copy of population
+    Y - copy of function results (ordered same as population)
+    y - best result (lowest energy)
     """
 
     def __init__(self, func, bounds, *args, **kwargs):
