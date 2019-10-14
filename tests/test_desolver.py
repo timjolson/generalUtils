@@ -4,7 +4,6 @@ from scipy.optimize import rosen
 import numpy as np
 import time
 from tqdm import tqdm
-
 from generalUtils.differential_evolver import DESolver
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -23,7 +22,7 @@ def test_state():
     backup = des.state.copy()
 
     # make from state
-    from_state = DESolver.from_state(backup, rosen)
+    from_state = DESolver(rosen, **backup)
 
     # verify matching state (state includes population, energies, config options, etc.)
     assert des.state == from_state.state
@@ -39,15 +38,13 @@ def test_from_state():
     json.dump(des.state, open(filename, 'w'), indent=4)
 
     # make from file
-    from_state = DESolver.from_state(json.load(open(filename, 'r')), rosen)
+    from_state = DESolver(rosen, **json.load(open(filename, 'r')))
 
     # verify matching state (state includes population, energies, config options, etc.)
     assert des.state == from_state.state
 
     # This fails regularly, appears to be low level, inconsequential math error
     # Any differences between arrays should be extremely small (float error, etc.)
-    # assert (des.population == from_state.population).all()
-    # assert (np.abs(des.population - from_state.population) < 1e-16).all()
     assert np.allclose(des.population, from_state.population)
     logging.debug(f"diff\n{des.population - from_state.population}")
 
@@ -74,7 +71,7 @@ def test_iterate_load_save():
     json.dump(des.state, open(filename, 'w'))
 
     # load file
-    des = DESolver.from_state(json.load(open(filename, 'r')), rosen)
+    des = DESolver(rosen, **json.load(open(filename, 'r')))
 
     # iterate some
     for i in range(iters):
@@ -85,7 +82,7 @@ def test_iterate_load_save():
 
     # reload file
     del des
-    des = DESolver.from_state(des_state_backup, rosen)
+    des = DESolver(rosen, **des_state_backup)
     assert des._nfev == iters * des.num_population_members + 1
     # solve
     assert (des.solve().x == 1.0).all()
@@ -95,7 +92,7 @@ def test_iterate_load_save():
 
 
 def test_tqdm():
-    des = DESolver(lambda x: [rosen(x), time.sleep(.05)][0],
+    des = DESolver(lambda x: [rosen(x), time.sleep(.001)][0],
                    bounds=[(0, 2), (0, 2), (0, 2), (0, 2), (0, 2)],
                    popsize=2, maxiter=2, maxfun=30, p_bars=True)
     des.solve()
@@ -103,7 +100,7 @@ def test_tqdm():
     assert des.pbar_gen_mutations.n == 0
     assert np.isclose(des.pbar_gens.n, 2.0)
 
-    des = DESolver(lambda x: [rosen(x), time.sleep(.07)][0],
+    des = DESolver(lambda x: [rosen(x), time.sleep(.001)][0],
                    bounds=[(0, 2), (0, 2), (0, 2), (0, 2), (0, 2)],
                    popsize=2, maxiter=1, maxfun=30, p_bars=True)
     des.solve()
@@ -111,7 +108,7 @@ def test_tqdm():
     assert des.pbar_gen_mutations.n == 0
     assert np.isclose(des.pbar_gens.n, 1.0)
 
-    des = DESolver(lambda x: [rosen(x), time.sleep(.07)][0],
+    des = DESolver(lambda x: [rosen(x), time.sleep(.001)][0],
                    bounds=[(0, 2), (0, 2), (0, 2), (0, 2), (0, 2)],
                    popsize=2, maxiter=2, p_bars=True)
     des.solve()
@@ -119,7 +116,7 @@ def test_tqdm():
     assert des.pbar_gen_mutations.n == 0
     assert np.isclose(des.pbar_gens.n, 2.0)
 
-    des = DESolver(lambda x: [rosen(x), time.sleep(.07)][0],
+    des = DESolver(lambda x: [rosen(x), time.sleep(.001)][0],
                    bounds=[(0, 2), (0, 2), (0, 2), (0, 2), (0, 2)],
                    popsize=2, maxfun=23, p_bars=True)
     des.solve()
@@ -127,7 +124,7 @@ def test_tqdm():
     assert des.pbar_gen_mutations.n == 3
     assert np.isclose(des.pbar_gens.n, 1.0 + 3 / 10)
 
-    des = DESolver(lambda x: [rosen(x), time.sleep(.07)][0],
+    des = DESolver(lambda x: [rosen(x), time.sleep(.001)][0],
                    bounds=[(0, 2), (0, 2), (0, 2), (0, 2), (0, 2)],
                    popsize=2, maxiter=1, p_bars=True)
     des.solve()
@@ -137,7 +134,7 @@ def test_tqdm():
 
 
 def test_tqdm_resume():
-    des = DESolver(lambda x: [rosen(x), time.sleep(.07)][0],
+    des = DESolver(lambda x: [rosen(x), time.sleep(.001)][0],
                    bounds=[(0, 2), (0, 2), (0, 2), (0, 2), (0, 2)],
                    popsize=2, maxiter=1, p_bars=True)
     des.solve()
@@ -145,7 +142,7 @@ def test_tqdm_resume():
     assert des.pbar_gen_mutations.n == 0
     assert np.isclose(des.pbar_gens.n, 1.0)
 
-    des = DESolver.from_state(des.state, rosen)
+    des = DESolver(rosen, **des.state)
     assert des._nfev == 20
     assert des.pbar_feval.n == 20
     assert des.pbar_gen_mutations.n == 0
@@ -159,7 +156,7 @@ def test_tqdm_resume():
 
 
 def test_tqdm_resume_interrupted():
-    des = DESolver(lambda x: [rosen(x), time.sleep(.07)][0],
+    des = DESolver(lambda x: [rosen(x), time.sleep(.001)][0],
                    bounds=[(0, 2), (0, 2), (0, 2), (0, 2), (0, 2)],
                    popsize=2, maxfun=23, p_bars=True)
     des.solve()
@@ -167,10 +164,9 @@ def test_tqdm_resume_interrupted():
     assert des.pbar_gen_mutations.n == 3
     assert np.isclose(des.pbar_gens.n, 1.0 + 3 / 10)
 
-    print('from_state')
     state = des.state.copy()
-    state['options']['maxfun'] = 40
-    des = DESolver.from_state(state, rosen)
+    state['maxfun'] = 40
+    des = DESolver(rosen, **state)
     assert des._nfev == 23
     assert des.pbar_feval.n == 23
     assert des.pbar_gen_mutations.n == 3

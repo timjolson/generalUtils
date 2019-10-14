@@ -1,19 +1,15 @@
 from scipy.optimize._differentialevolution import DifferentialEvolutionSolver, np
 from scipy.optimize.optimize import _status_message
 from tqdm import tqdm
+from .keyboard_detection import KeyStop, keyboard_detection
 import os, sys, termios, select
 
 
 class DESolver(DifferentialEvolutionSolver):
     __doc__ = str(DifferentialEvolutionSolver.__doc__) + \
     """
-    Custom Methods:
-    .from_state(state_object, func, args, callback)
-        returns DESolver object created from dict `state_object`
-    .from_json(json_dict_state, func, args, callback)
-        returns DESolver object created from a json structure
-    
     Custom Properties:
+    state - kwargs dict to resume with DESolver(func, **state)
     X - copy of population
     Y - copy of function results (ordered same as population)
     y - best result (lowest energy)
@@ -23,9 +19,8 @@ class DESolver(DifferentialEvolutionSolver):
         # store things needed to remake from a loaded file
         self.seed = kwargs.get('seed', None)
         self.workers = kwargs.get('workers', 1)
-        self.mutation = kwargs.get('mutation', (0.5, 1))
+        self.mutation = tuple(kwargs.get('mutation', (0.5, 1)))
         self.p_bars = p_bars
-        self._inited = kwargs.pop('_inited', False)
         nrg = kwargs.pop('nrg', None)
         nfev = kwargs.pop('nfev', 0)
         kwargs.setdefault('polish', False)
@@ -36,6 +31,7 @@ class DESolver(DifferentialEvolutionSolver):
                 self.population_energies[:] = nrg[:]
             if nfev != 0:
                 self._nfev = nfev
+            self._inited = nfev >= self.num_population_members
             return
 
         # wrap func with pbar updates
@@ -57,6 +53,7 @@ class DESolver(DifferentialEvolutionSolver):
             self.population_energies[:] = nrg[:]
         if nfev != 0:
             self._nfev = nfev
+        self._inited = nfev >= self.num_population_members
 
         if not np.isfinite(self.maxfun):  # no max fun
             if not np.isfinite(self.maxiter):  # no max fun, no max iter/gen
@@ -120,118 +117,43 @@ class DESolver(DifferentialEvolutionSolver):
             self.pbar_gen_mutations.close()
         return res
 
-    @classmethod
-    def from_state(cls, state, func, args=(), callback=None):
-        state['options']['mutation'] = cls.__fix_mutation(state['options']['mutation'])
-        obj = cls(func, args=args, init=state['pop'].copy(),
-                  callback=callback, _inited=state['_inited'],
-                  nrg=state['nrg'][:], nfev=state['nfev'],
-                  **state['options'])
-
-        return obj
-
-    @staticmethod
-    def __fix_bounds(bounds):
-        return [(bounds[0][i], bounds[1][i]) for i in range(len(bounds[0]))]
-
     @staticmethod
     def __fix_mutation(mutation):
-        if isinstance(mutation, list):
-            return tuple(mutation)
-        else:
-            return mutation
+        return tuple(mutation)
 
     @property
     def state(self):
         return dict(
-            nfev=self._nfev, best_x=self.x.tolist(), best_y=self.y,
-            options=dict(
-                popsize=self.num_population_members,
-                bounds=self.__fix_bounds(self.limits),
-                maxiter=self.maxiter,
-                maxfun=self.maxfun,
-                mutation=self.mutation,
-                recombination=self.cross_over_probability,
-                tol=self.tol, atol=self.atol,
-                strategy=self.strategy,
-                seed=self.seed,
-                polish=self.polish,
-                disp=self.disp,
-                updating=self._updating,
-                workers=self.workers,
-                p_bars=self.p_bars
-            ),
-            pop=self.X.tolist(),
-            nrg=self.population_energies.tolist(),
-            _inited=self._inited
+            nfev=self._nfev,
+            popsize=int(self.num_population_members/self.parameter_count),
+            bounds=self.limits.T.tolist(),
+            maxiter=self.maxiter,
+            maxfun=self.maxfun,
+            mutation=self.mutation,
+            recombination=self.cross_over_probability,
+            tol=self.tol, atol=self.atol,
+            strategy=self.strategy,
+            seed=self.seed,
+            polish=self.polish,
+            disp=self.disp,
+            updating=self._updating,
+            workers=self.workers,
+            p_bars=self.p_bars,
+            init=self.X.tolist(),
+            nrg=self.population_energies.tolist()
         )
 
     @property
     def X(self):
-        """
-        The current population without internal scaling
-        """
-        return self._scale_parameters(self.population).copy()
+        """The current population without internal scaling"""
+        return self._scale_parameters(self.population)
 
     @property
     def Y(self):
-        """
-        The current population energies
-        """
+        """The current population energies"""
         return self.population_energies.copy()
 
     @property
     def y(self):
-        """
-        The current best energy
-        """
+        """The current best energy"""
         return self.population_energies[0]
-
-
-class KeyStop(Exception):
-    pass
-
-
-class keyboard_detection:
-    """
-    Use in a with statement to enable the appropriate terminal mode to detect keyboard presses
-    without blocking for input.  Used this way, the with statement puts a boolean detection
-    function in the target variable.  The resulting function can be called any number of times
-    until a keypress is detected.  Sample code:
-
-    with keyboard_detection() as key_pressed:
-        while not key_pressed():
-            sys.stdout.write('.')
-            sys.stdout.flush()
-            sleep(0.5)
-    print 'done'
-
-    Upon exiting the with code block, the terminal is reverted to its calling (normal) state.
-    The sys.stdout.flush() is important when in the keyboard detection mode; otherwise, text
-    output won't be seen.
-    """
-
-    def __enter__(self):
-        # save the terminal settings
-        self.fd = sys.stdin.fileno()
-        self.new_term = termios.tcgetattr(self.fd)
-        self.old_term = termios.tcgetattr(self.fd)
-
-        # new terminal setting unbuffered
-        self.new_term[3] = (self.new_term[3] & ~termios.ICANON & ~termios.ECHO)
-
-        # switch to unbuffered terminal
-        termios.tcsetattr(self.fd, termios.TCSAFLUSH, self.new_term)
-
-        return self.query_keyboard
-
-    def __exit__(self, type, value, traceback):
-        # swith to normal terminal
-        termios.tcsetattr(self.fd, termios.TCSAFLUSH, self.old_term)
-
-    def query_keyboard(self, keys=list((b'q', b'\x1b'))):
-        dr, dw, de = select([sys.stdin], [], [], 0)
-        key = None
-        if dr:
-            key = os.read(sys.stdin.fileno(), 1)
-        return key in keys
