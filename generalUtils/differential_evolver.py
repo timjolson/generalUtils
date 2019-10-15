@@ -1,8 +1,6 @@
 from scipy.optimize._differentialevolution import DifferentialEvolutionSolver, np
 from scipy.optimize.optimize import _status_message
 from tqdm import tqdm
-from .keyboard_detection import KeyStop, keyboard_detection
-import os, sys, termios, select
 
 
 class DESolver(DifferentialEvolutionSolver):
@@ -16,7 +14,7 @@ class DESolver(DifferentialEvolutionSolver):
     """
 
     def __init__(self, func, bounds, args=(), p_bars=False, **kwargs):
-        # store things needed to remake from a loaded file
+        # store things needed to make `state`
         self.seed = kwargs.get('seed', None)
         self.workers = kwargs.get('workers', 1)
         self.mutation = tuple(kwargs.get('mutation', (0.5, 1)))
@@ -26,34 +24,32 @@ class DESolver(DifferentialEvolutionSolver):
         kwargs.setdefault('polish', False)
 
         if p_bars is False:
-            super().__init__(func, bounds, args, **kwargs)
-            if nrg is not None:
-                self.population_energies[:] = nrg[:]
-            if nfev != 0:
-                self._nfev = nfev
-            self._inited = nfev >= self.num_population_members
-            return
+            _func = func
+        else:
+            # wrap func with pbar updates
+            def _func(parameters, *args):
+                rv = func(parameters, *args)
+                if self._inited is False:  # nfev does not get updated during initial population eval
+                    self._nfev += 1
+                if self.p_bars is True:
+                    self.pbar_feval.update()
+                    self.pbar_gen_mutations.update()
+                    self.pbar_gens.update(1 / self.pbar_gen_mutations.total)
+                    if self.pbar_gen_mutations.n == self.pbar_gen_mutations.total:
+                        self.pbar_gen_mutations.reset(self.num_population_members)
+                return rv
 
-        # wrap func with pbar updates
-        def _func(parameters):
-            rv = func(parameters)
-            if self._inited is False:  # nfev does not get updated by initial population filling
-                self._nfev += 1
-            if self.p_bars is True:
-                self.pbar_feval.update()
-                self.pbar_gen_mutations.update()
-                self.pbar_gens.update(1 / self.pbar_gen_mutations.total)
-                if self.pbar_gen_mutations.n == self.pbar_gen_mutations.total:
-                    self.pbar_gen_mutations.reset(self.num_population_members)
-            return rv
-
-        super().__init__(_func, bounds, *args, **kwargs)
+        super().__init__(_func, bounds, args, **kwargs)
 
         if nrg is not None:
             self.population_energies[:] = nrg[:]
         if nfev != 0:
             self._nfev = nfev
         self._inited = nfev >= self.num_population_members
+
+        if p_bars is False:
+            # the rest of __init__ is tqdm setup
+            return
 
         if not np.isfinite(self.maxfun):  # no max fun
             if not np.isfinite(self.maxiter):  # no max fun, no max iter/gen
@@ -69,14 +65,14 @@ class DESolver(DifferentialEvolutionSolver):
                     self.maxfun  # dictated by maxfun
                 )
 
-        mut_initial = (self._nfev % self.num_population_members)
         if self._nfev >= self.num_population_members*2:  # first gen complete
-            gen_initial = (self._nfev - self.num_population_members) / self.num_population_members
             mut_total = self.num_population_members
-        # elif self._nfev >= self.num_population_members:  # initial pop calculated
+            gen_initial = (self._nfev - self.num_population_members) / mut_total
+            mut_initial = (self._nfev % self.num_population_members)
         else:
-            gen_initial = self._nfev / (self.num_population_members * 2)
             mut_total = self.num_population_members * 2
+            gen_initial = self._nfev / mut_total
+            mut_initial = (self._nfev % mut_total)
 
         self.pbar_feval = tqdm(
             initial=self._nfev, total=maxfeval,
@@ -94,32 +90,28 @@ class DESolver(DifferentialEvolutionSolver):
     def _calculate_population_energies(self, population):
         rv = super()._calculate_population_energies(population)
         if self._inited is False:
-            self._nfev -= self.num_population_members - 1
+            self._nfev -= self.num_population_members
             self._inited = True
         return rv
 
     def solve(self):
-        try:
-            res = super().solve()
-        except KeyStop as e:
-            self._nfev -= 1
-            raise
-        else:
-            if res.message == _status_message['maxiter']:
-                self._nfev -= 1
-            elif res.message == _status_message['maxfev']:
-                self._nfev -= 1
-            elif res.message == _status_message['success']:
-                self._nfev -= 1
+        # try:
+        res = super().solve()
+        # except KeyboardStop as e:
+        #     self._nfev -= 1
+        #     raise
+        # else:
+        #     if res.message == _status_message['maxiter']:
+        #         self._nfev -= 1
+        #     elif res.message == _status_message['maxfev']:
+        #         self._nfev -= 1
+        #     elif res.message == _status_message['success']:
+        #         self._nfev -= 1
         if self.p_bars:
             self.pbar_feval.close()
             self.pbar_gens.close()
             self.pbar_gen_mutations.close()
         return res
-
-    @staticmethod
-    def __fix_mutation(mutation):
-        return tuple(mutation)
 
     @property
     def state(self):

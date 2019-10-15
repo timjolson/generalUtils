@@ -77,13 +77,13 @@ def test_iterate_load_save():
     for i in range(iters):
         x, y = next(des)
         logging.debug(f"nfev:{des._nfev}  iteration/generation: {i} \tx:{x}\ty:{y}")
-    assert des._nfev == iters * popsize * des.parameter_count + 1
+    assert des._nfev == iters * popsize * des.parameter_count
     des_state_backup = des.state
 
     # reload file
     del des
     des = DESolver(rosen, **des_state_backup)
-    assert des._nfev == iters * des.num_population_members + 1
+    assert des._nfev == iters * des.num_population_members
     # solve
     assert (des.solve().x == 1.0).all()
 
@@ -120,9 +120,9 @@ def test_tqdm():
                    bounds=[(0, 2), (0, 2), (0, 2), (0, 2), (0, 2)],
                    popsize=2, maxfun=23, p_bars=True)
     des.solve()
-    assert des.pbar_feval.n == 23
-    assert des.pbar_gen_mutations.n == 3
-    assert np.isclose(des.pbar_gens.n, 1.0 + 3 / 10)
+    assert des.pbar_feval.n == 24
+    assert des.pbar_gen_mutations.n == 4
+    assert np.isclose(des.pbar_gens.n, 1.0 + 4 / 10)
 
     des = DESolver(lambda x: [rosen(x), time.sleep(.001)][0],
                    bounds=[(0, 2), (0, 2), (0, 2), (0, 2), (0, 2)],
@@ -146,13 +146,13 @@ def test_tqdm_resume():
     assert des._nfev == 20
     assert des.pbar_feval.n == 20
     assert des.pbar_gen_mutations.n == 0
-    assert des.pbar_gens.n == 1.0
+    assert des.pbar_gens.n == 1.0+0/10
 
     x, y = next(des)
     assert des._nfev == 30
     assert des.pbar_feval.n == 30
     assert des.pbar_gen_mutations.n == 0
-    assert np.isclose(des.pbar_gens.n, 2.0)
+    assert np.isclose(des.pbar_gens.n, 2.0+0/10)
 
 
 def test_tqdm_resume_interrupted():
@@ -160,23 +160,23 @@ def test_tqdm_resume_interrupted():
                    bounds=[(0, 2), (0, 2), (0, 2), (0, 2), (0, 2)],
                    popsize=2, maxfun=23, p_bars=True)
     des.solve()
-    assert des.pbar_feval.n == 23
-    assert des.pbar_gen_mutations.n == 3
-    assert np.isclose(des.pbar_gens.n, 1.0 + 3 / 10)
+    assert des.pbar_feval.n == 24
+    assert des.pbar_gen_mutations.n == 4
+    assert np.isclose(des.pbar_gens.n, 1.0 + 4 / 10)
 
     state = des.state.copy()
     state['maxfun'] = 40
     des = DESolver(rosen, **state)
-    assert des._nfev == 23
-    assert des.pbar_feval.n == 23
-    assert des.pbar_gen_mutations.n == 3
-    assert np.isclose(des.pbar_gens.n, 1.0 + 3 / 10)
+    assert des._nfev == 24
+    assert des.pbar_feval.n == 24
+    assert des.pbar_gen_mutations.n == 4
+    assert np.isclose(des.pbar_gens.n, 1.0 + 4 / 10)
 
     x, y = next(des)
-    assert des._nfev == 33
-    assert des.pbar_feval.n == 33
-    assert des.pbar_gen_mutations.n == 3
-    assert np.isclose(des.pbar_gens.n, 2.0+3/10)
+    assert des._nfev == 34
+    assert des.pbar_feval.n == 34
+    assert des.pbar_gen_mutations.n == 4
+    assert np.isclose(des.pbar_gens.n, 2.0+4/10)
 
     with pytest.raises(StopIteration):
         x, y = next(des)
