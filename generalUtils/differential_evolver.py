@@ -1,5 +1,4 @@
 from scipy.optimize._differentialevolution import DifferentialEvolutionSolver, np
-from scipy.optimize.optimize import _status_message
 from tqdm import tqdm
 
 
@@ -17,18 +16,24 @@ class DESolver(DifferentialEvolutionSolver):
         # store things needed to make `state`
         self.seed = kwargs.get('seed', None)
         self.workers = kwargs.get('workers', 1)
-        self.mutation = tuple(kwargs.get('mutation', (0.5, 1)))
+        self.mutation = kwargs.get('mutation', (0.5, 1))
         self.p_bars = p_bars
         nrg = kwargs.pop('nrg', None)
         nfev = kwargs.pop('nfev', 0)
         kwargs.setdefault('polish', False)
+        self.feval_callback = lambda *x: None
+        self.gen_callback = lambda *x: None
 
         if p_bars is False:
-            _func = func
+            def _func(parameters, *args):
+                rv = func(parameters, *args)
+                self.feval_callback(self, parameters, rv, *args)
+                return rv
         else:
             # wrap func with pbar updates
             def _func(parameters, *args):
                 rv = func(parameters, *args)
+                self.feval_callback(self, parameters, rv, *args)
                 if self._inited is False:  # nfev does not get updated during initial population eval
                     self._nfev += 1
                 if self.p_bars is True:
@@ -37,6 +42,7 @@ class DESolver(DifferentialEvolutionSolver):
                     self.pbar_gens.update(1 / self.pbar_gen_mutations.total)
                     if self.pbar_gen_mutations.n == self.pbar_gen_mutations.total:
                         self.pbar_gen_mutations.reset(self.num_population_members)
+                        self.pbar_gens.moveto(int(self.pbar_gens.n))
                 return rv
 
         super().__init__(_func, bounds, args, **kwargs)
@@ -45,6 +51,7 @@ class DESolver(DifferentialEvolutionSolver):
             self.population_energies[:] = nrg[:]
         if nfev != 0:
             self._nfev = nfev
+
         self._inited = nfev >= self.num_population_members
 
         if p_bars is False:
@@ -60,10 +67,14 @@ class DESolver(DifferentialEvolutionSolver):
             if not np.isfinite(self.maxiter):  # max fun, no max iter/gen
                 maxfeval = self.maxfun
             else:  # max fun, max iter/gen
-                maxfeval = min(
-                    (self.maxiter + 1) * self.num_population_members,  # dictated by generations
-                    self.maxfun  # dictated by maxfun
-                )
+                i = (self.maxiter + 1) * self.num_population_members  # by generations
+                if i < self.maxfun:  # dictated by iter
+                    maxfeval = i
+                elif self.maxfun < i:  # dictated by fun
+                    maxfeval = self.maxfun
+                    self.maxiter = round(self.maxfun / self.num_population_members) + 1
+                else:
+                    maxfeval = self.maxfun
 
         if self._nfev >= self.num_population_members*2:  # first gen complete
             mut_total = self.num_population_members
@@ -75,13 +86,13 @@ class DESolver(DifferentialEvolutionSolver):
             mut_initial = (self._nfev % mut_total)
 
         self.pbar_feval = tqdm(
-            initial=self._nfev, total=maxfeval,
-            leave=True, ncols=80, desc='FuncEval',
+            initial=self._nfev, total=maxfeval if np.isfinite(maxfeval) else 0,
+            leave=True, ncols=80, desc='F-Evals',
             bar_format='{desc}: {percentage:.2f}%|{bar}| {n}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]')
         self.pbar_gens = tqdm(
             initial=gen_initial, total=self.maxiter,
             leave=True, ncols=80, desc='Generation',
-            bar_format='{desc}: {percentage:.2f}%|{bar}| {n:.2f}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]')
+            bar_format='{desc}: {percentage:.2f}%|{bar}| {n:.2f}/{total_fmt} [{rate_fmt}{postfix}]')
         self.pbar_gen_mutations = tqdm(
             initial=mut_initial, total=mut_total,
             leave=True, ncols=80, desc='Mutation',
@@ -93,6 +104,11 @@ class DESolver(DifferentialEvolutionSolver):
             self._nfev -= self.num_population_members
             self._inited = True
         return rv
+
+    def __next__(self):
+        x, nrg = DifferentialEvolutionSolver.__next__(self)
+        self.gen_callback(self)
+        return x, nrg
 
     def solve(self):
         # try:
