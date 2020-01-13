@@ -51,8 +51,8 @@ def test_from_state():
     res = from_state.solve()
     logging.debug(f"solution=\n{res}")
     # Make sure func can be solved when made from_state
-    assert (res.x == 1.0).all()
-    assert res.fun == 0.0
+    assert np.isclose(res.x, 1.0).all()
+    assert np.isclose(res.fun, 0.0)
 
     # cleanup
     clear_file(filename)
@@ -85,7 +85,7 @@ def test_iterate_load_save():
     des = DESolver(rosen, **des_state_backup)
     assert des._nfev == iters * des.num_population_members
     # solve
-    assert (des.solve().x == 1.0).all()
+    assert np.isclose(des.solve().x, 1.0).all()
 
     # cleanup
     clear_file(filename)
