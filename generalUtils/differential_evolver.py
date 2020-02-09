@@ -40,9 +40,9 @@ class DESolver(DifferentialEvolutionSolver):
                     self.pbar_feval.update()
                     self.pbar_gen_mutations.update()
                     self.pbar_gens.update(1 / self.pbar_gen_mutations.total)
-                    if self.pbar_gen_mutations.n == self.pbar_gen_mutations.total:
-                        self.pbar_gen_mutations.reset(self.num_population_members)
-                        self.pbar_gens.moveto(int(self.pbar_gens.n))
+                    # if self.pbar_gen_mutations.n == self.pbar_gen_mutations.total:
+                        # self.pbar_gen_mutations.reset(self.num_population_members)
+                        # self.pbar_gens.moveto(int(self.pbar_gens.n))
                 return rv
 
         super().__init__(_func, bounds, args, **kwargs)
@@ -95,7 +95,7 @@ class DESolver(DifferentialEvolutionSolver):
             bar_format='{desc}: {percentage:.2f}%|{bar}| {n:.2f}/{total_fmt} [{rate_fmt}{postfix}]')
         self.pbar_gen_mutations = tqdm(
             initial=mut_initial, total=mut_total,
-            leave=True, ncols=80, desc='Mutation',
+            leave=False, ncols=80, desc='Mutation',
             bar_format='{desc}: {percentage:.2f}%|{bar}| {n}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]')
 
     def _calculate_population_energies(self, population):
@@ -106,7 +106,16 @@ class DESolver(DifferentialEvolutionSolver):
         return rv
 
     def __next__(self):
+        self.pbar_gen_mutations.close()
+        self.pbar_gen_mutations = tqdm(
+            total=self.num_population_members,
+            leave=False, ncols=80, desc='Mutation',
+            bar_format='{desc}: {percentage:.2f}%|{bar}| {n}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]')
+        
         x, nrg = DifferentialEvolutionSolver.__next__(self)
+        
+        self.pbar_gens.moveto(int(self.pbar_gens.n))
+        self.pbar_gen_mutations.close()
         self.gen_callback(self)
         return x, nrg
 
