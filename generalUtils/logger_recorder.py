@@ -6,7 +6,6 @@ from time import time
 
 class Logger():
     """class logs messages to a file, uses locks to prevent garbling.
-    Written by Tim Olson - tim.lsn@gmail.com
 
     obj = Logger(filename, logger_name, print_out, level, clear, format_string)
         filename (string): The file will be created relative to the calling location.
@@ -109,7 +108,6 @@ class Logger():
 
 class Recorder(Logger):
     """class logs strictly data to a file, subclass of Logger.
-        Written by Tim Olson - tim.lsn@gmail.com
     
     obj = Recorder(filename)
         filename (string): see Logger for more info
